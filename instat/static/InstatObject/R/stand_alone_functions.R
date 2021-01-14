@@ -1966,3 +1966,30 @@ plot_multiple_threshold <- function(data, station_col_name, element_col_name, r,
     threshold_Plot(x = element_col, r = r, type = type, nint = nint, alpha = alpha, verbose = verbose)
   }
 }
+other_rose_plots <- function(mydata, wd_name, ws_name='ws_name', date_name, mymethod="percentile_rose", ...){
+  if (!("ws" %in% colnames(mydata))){
+    mydata <- dplyr::rename(mydata, ws = !!ws_name)
+  }
+  if (!("date" %in% colnames(mydata))){
+    mydata <- dplyr::rename(mydata, date = !!date_name)
+  }
+  if(!("wd" %in% colnames(mydata))){    
+    mydata <- dplyr::rename(mydata, wd = !!wd_name)
+  }
+  if (mymethod == 'percentile_rose'){
+    openair::percentileRose(mydata = mydata,...)
+  }
+  if (mymethod == 'polar_plot'){
+    openair::polarPlot(mydata = mydata,...)
+  }
+  if (mymethod == 'polar_annulus'){
+    openair::polarAnnulus(mydata = mydata,...)
+  }
+  if (mymethod == 'polar_cluster'){
+    openair::polarCluster(mydata = mydata,...)
+  }
+  if (mymethod == 'polar_frequency'){
+    openair::polarFreq(mydata = mydata,...)
+  }
+}
+
