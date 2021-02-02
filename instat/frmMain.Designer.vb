@@ -3402,8 +3402,8 @@ Partial Class frmMain
         '
         'mnuStructuredCircularDensityPlot
         '
-        resources.ApplyResources(Me.mnuStructuredCircularDensityPlot, "mnuStructuredCircularDensityPlot")
         Me.mnuStructuredCircularDensityPlot.Name = "mnuStructuredCircularDensityPlot"
+        resources.ApplyResources(Me.mnuStructuredCircularDensityPlot, "mnuStructuredCircularDensityPlot")
         '
         'mnuStructuredCircularRosePlot
         '

@@ -2242,4 +2242,8 @@ Public Class frmMain
     Private Sub ExportToWWRToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles mnuExportToWWRToolStrip.Click
         dlgExportToWWR.ShowDialog()
     End Sub
+
+    Private Sub mnuStructuredCircularDensityPlot_Click(sender As Object, e As EventArgs) Handles mnuStructuredCircularDensityPlot.Click
+        dlgCircularDensityPlot.ShowDialog()
+    End Sub
 End Class

@@ -322,6 +322,30 @@
     <Compile Include="dlgWindPollutionRose.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="sdgDensityLaterOptions.Designer.vb">
+      <DependentUpon>sdgDensityLaterOptions.vb</DependentUpon>
+    </Compile>
+    <Compile Include="sdgDensityLaterOptions.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="sdgDensityPlot.Designer.vb">
+      <DependentUpon>sdgDensityPlot.vb</DependentUpon>
+    </Compile>
+    <Compile Include="sdgDensityPlot.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="sdgDensityThemes.Designer.vb">
+      <DependentUpon>sdgDensityThemes.vb</DependentUpon>
+    </Compile>
+    <Compile Include="sdgDensityThemes.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="sdgDensityThemesSub.Designer.vb">
+      <DependentUpon>sdgDensityThemesSub.vb</DependentUpon>
+    </Compile>
+    <Compile Include="sdgDensityThemesSub.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="sdgExportToWWR.Designer.vb">
       <DependentUpon>sdgExportToWWR.vb</DependentUpon>
     </Compile>
@@ -2716,6 +2740,18 @@
     </EmbeddedResource>
     <EmbeddedResource Include="dlgWindPollutionRose.resx">
       <DependentUpon>dlgWindPollutionRose.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="sdgDensityLaterOptions.resx">
+      <DependentUpon>sdgDensityLaterOptions.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="sdgDensityPlot.resx">
+      <DependentUpon>sdgDensityPlot.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="sdgDensityThemes.resx">
+      <DependentUpon>sdgDensityThemes.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="sdgDensityThemesSub.resx">
+      <DependentUpon>sdgDensityThemesSub.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="sdgExportToWWR.resx">
       <DependentUpon>sdgExportToWWR.vb</DependentUpon>
