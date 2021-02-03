@@ -671,9 +671,9 @@ Public Class sdgDensityPlot
     End Function
 
     Private Sub cmdAllOptions_Click(sender As Object, e As EventArgs) Handles cmdAllOptions.Click
-        sdgThemes.SetRCode(clsBaseOperator, clsNewThemeFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, bReset:=bResetThemes)
+        sdgDensityThemes.SetRCode(clsBaseOperator, clsNewThemeFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, bReset:=bResetThemes)
         Me.SendToBack()
-        sdgThemes.ShowDialog()
+        sdgDensityThemes.ShowDialog()
         bResetThemes = False
         SetRcodeForCommonThemesControls(False)
     End Sub
@@ -773,9 +773,9 @@ Public Class sdgDensityPlot
     End Sub
 
     Private Sub cmdSimpleOptions_Click(sender As Object, e As EventArgs) Handles cmdSimpleOptions.Click
-        sdgThemesSub.SetRCode(clsBaseOperator, clsNewThemesFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, bReset:=bResetThemes)
+        sdgDensityThemesSub.SetRCode(clsBaseOperator, clsNewThemesFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, bReset:=bResetThemes)
         Me.SendToBack()
-        sdgThemesSub.ShowDialog()
+        sdgDensityThemesSub.ShowDialog()
         SetRcodeForCommonThemesControls(False)
     End Sub
 

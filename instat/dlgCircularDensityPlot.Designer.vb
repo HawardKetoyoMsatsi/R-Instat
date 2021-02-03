@@ -26,23 +26,19 @@ Partial Class dlgCircularDensityPlot
         Me.lblStats = New System.Windows.Forms.Label()
         Me.ucrInputStats = New instat.ucrInputComboBox()
         Me.ucrChkPercentages = New instat.ucrCheck()
-        Me.ucrSaveHist = New instat.ucrSave()
+        Me.ucrSavePlot = New instat.ucrSave()
         Me.ucrFactorReceiver = New instat.ucrReceiverSingle()
-        Me.cmdHistogramOptions = New System.Windows.Forms.Button()
+        Me.cmdDensityOptions = New System.Windows.Forms.Button()
         Me.cmdOptions = New System.Windows.Forms.Button()
-        Me.ucrHistogramSelector = New instat.ucrSelectorByDataFrameAddRemove()
+        Me.ucrDensitySelector = New instat.ucrSelectorByDataFrameAddRemove()
         Me.lblfactor = New System.Windows.Forms.Label()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.ucrVariablesAsFactorforHist = New instat.ucrVariablesAsFactor()
-        Me.rdoFrequencyPolygon = New System.Windows.Forms.RadioButton()
-        Me.rdoDensity = New System.Windows.Forms.RadioButton()
-        Me.rdoHistogram = New System.Windows.Forms.RadioButton()
-        Me.ucrPnlOptions = New instat.UcrPanel()
         Me.SuspendLayout()
         '
         'ucrBase
         '
-        Me.ucrBase.Location = New System.Drawing.Point(7, 369)
+        Me.ucrBase.Location = New System.Drawing.Point(7, 334)
         Me.ucrBase.Name = "ucrBase"
         Me.ucrBase.Size = New System.Drawing.Size(410, 52)
         Me.ucrBase.TabIndex = 0
@@ -50,7 +46,7 @@ Partial Class dlgCircularDensityPlot
         'lblStats
         '
         Me.lblStats.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.lblStats.Location = New System.Drawing.Point(14, 298)
+        Me.lblStats.Location = New System.Drawing.Point(14, 263)
         Me.lblStats.Name = "lblStats"
         Me.lblStats.Size = New System.Drawing.Size(32, 18)
         Me.lblStats.TabIndex = 20
@@ -61,7 +57,7 @@ Partial Class dlgCircularDensityPlot
         Me.ucrInputStats.AddQuotesIfUnrecognised = True
         Me.ucrInputStats.GetSetSelectedIndex = -1
         Me.ucrInputStats.IsReadOnly = False
-        Me.ucrInputStats.Location = New System.Drawing.Point(57, 290)
+        Me.ucrInputStats.Location = New System.Drawing.Point(57, 255)
         Me.ucrInputStats.Margin = New System.Windows.Forms.Padding(5)
         Me.ucrInputStats.Name = "ucrInputStats"
         Me.ucrInputStats.Size = New System.Drawing.Size(137, 21)
@@ -70,24 +66,24 @@ Partial Class dlgCircularDensityPlot
         'ucrChkPercentages
         '
         Me.ucrChkPercentages.Checked = False
-        Me.ucrChkPercentages.Location = New System.Drawing.Point(203, 296)
+        Me.ucrChkPercentages.Location = New System.Drawing.Point(203, 261)
         Me.ucrChkPercentages.Margin = New System.Windows.Forms.Padding(4)
         Me.ucrChkPercentages.Name = "ucrChkPercentages"
         Me.ucrChkPercentages.Size = New System.Drawing.Size(100, 20)
         Me.ucrChkPercentages.TabIndex = 23
         '
-        'ucrSaveHist
+        'ucrSavePlot
         '
-        Me.ucrSaveHist.Location = New System.Drawing.Point(14, 332)
-        Me.ucrSaveHist.Margin = New System.Windows.Forms.Padding(5)
-        Me.ucrSaveHist.Name = "ucrSaveHist"
-        Me.ucrSaveHist.Size = New System.Drawing.Size(255, 24)
-        Me.ucrSaveHist.TabIndex = 22
+        Me.ucrSavePlot.Location = New System.Drawing.Point(14, 297)
+        Me.ucrSavePlot.Margin = New System.Windows.Forms.Padding(5)
+        Me.ucrSavePlot.Name = "ucrSavePlot"
+        Me.ucrSavePlot.Size = New System.Drawing.Size(255, 24)
+        Me.ucrSavePlot.TabIndex = 22
         '
         'ucrFactorReceiver
         '
         Me.ucrFactorReceiver.frmParent = Me
-        Me.ucrFactorReceiver.Location = New System.Drawing.Point(251, 221)
+        Me.ucrFactorReceiver.Location = New System.Drawing.Point(251, 186)
         Me.ucrFactorReceiver.Margin = New System.Windows.Forms.Padding(0)
         Me.ucrFactorReceiver.Name = "ucrFactorReceiver"
         Me.ucrFactorReceiver.Selector = Nothing
@@ -96,21 +92,21 @@ Partial Class dlgCircularDensityPlot
         Me.ucrFactorReceiver.TabIndex = 17
         Me.ucrFactorReceiver.ucrSelector = Nothing
         '
-        'cmdHistogramOptions
+        'cmdDensityOptions
         '
-        Me.cmdHistogramOptions.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.cmdHistogramOptions.Location = New System.Drawing.Point(14, 226)
-        Me.cmdHistogramOptions.Name = "cmdHistogramOptions"
-        Me.cmdHistogramOptions.Size = New System.Drawing.Size(120, 25)
-        Me.cmdHistogramOptions.TabIndex = 18
-        Me.cmdHistogramOptions.Tag = "Histogram_Options"
-        Me.cmdHistogramOptions.Text = "Histogram Options"
-        Me.cmdHistogramOptions.UseVisualStyleBackColor = True
+        Me.cmdDensityOptions.ImeMode = System.Windows.Forms.ImeMode.NoControl
+        Me.cmdDensityOptions.Location = New System.Drawing.Point(14, 191)
+        Me.cmdDensityOptions.Name = "cmdDensityOptions"
+        Me.cmdDensityOptions.Size = New System.Drawing.Size(120, 25)
+        Me.cmdDensityOptions.TabIndex = 18
+        Me.cmdDensityOptions.Tag = "Density_Options"
+        Me.cmdDensityOptions.Text = "Density Options"
+        Me.cmdDensityOptions.UseVisualStyleBackColor = True
         '
         'cmdOptions
         '
         Me.cmdOptions.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.cmdOptions.Location = New System.Drawing.Point(14, 257)
+        Me.cmdOptions.Location = New System.Drawing.Point(14, 222)
         Me.cmdOptions.Name = "cmdOptions"
         Me.cmdOptions.Size = New System.Drawing.Size(120, 25)
         Me.cmdOptions.TabIndex = 19
@@ -118,22 +114,22 @@ Partial Class dlgCircularDensityPlot
         Me.cmdOptions.Text = "Plot Options"
         Me.cmdOptions.UseVisualStyleBackColor = True
         '
-        'ucrHistogramSelector
+        'ucrDensitySelector
         '
-        Me.ucrHistogramSelector.bDropUnusedFilterLevels = False
-        Me.ucrHistogramSelector.bShowHiddenColumns = False
-        Me.ucrHistogramSelector.bUseCurrentFilter = True
-        Me.ucrHistogramSelector.Location = New System.Drawing.Point(14, 38)
-        Me.ucrHistogramSelector.Margin = New System.Windows.Forms.Padding(0)
-        Me.ucrHistogramSelector.Name = "ucrHistogramSelector"
-        Me.ucrHistogramSelector.Size = New System.Drawing.Size(214, 180)
-        Me.ucrHistogramSelector.TabIndex = 14
+        Me.ucrDensitySelector.bDropUnusedFilterLevels = False
+        Me.ucrDensitySelector.bShowHiddenColumns = False
+        Me.ucrDensitySelector.bUseCurrentFilter = True
+        Me.ucrDensitySelector.Location = New System.Drawing.Point(14, 3)
+        Me.ucrDensitySelector.Margin = New System.Windows.Forms.Padding(0)
+        Me.ucrDensitySelector.Name = "ucrDensitySelector"
+        Me.ucrDensitySelector.Size = New System.Drawing.Size(214, 180)
+        Me.ucrDensitySelector.TabIndex = 14
         '
         'lblfactor
         '
         Me.lblfactor.AutoSize = True
         Me.lblfactor.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.lblfactor.Location = New System.Drawing.Point(251, 206)
+        Me.lblfactor.Location = New System.Drawing.Point(251, 171)
         Me.lblfactor.Name = "lblfactor"
         Me.lblfactor.Size = New System.Drawing.Size(85, 13)
         Me.lblfactor.TabIndex = 16
@@ -143,7 +139,7 @@ Partial Class dlgCircularDensityPlot
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(248, 75)
+        Me.Label1.Location = New System.Drawing.Point(248, 40)
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(39, 13)
         Me.Label1.TabIndex = 26
@@ -152,7 +148,7 @@ Partial Class dlgCircularDensityPlot
         'ucrVariablesAsFactorforHist
         '
         Me.ucrVariablesAsFactorforHist.frmParent = Me
-        Me.ucrVariablesAsFactorforHist.Location = New System.Drawing.Point(251, 93)
+        Me.ucrVariablesAsFactorforHist.Location = New System.Drawing.Point(251, 58)
         Me.ucrVariablesAsFactorforHist.Margin = New System.Windows.Forms.Padding(5)
         Me.ucrVariablesAsFactorforHist.Name = "ucrVariablesAsFactorforHist"
         Me.ucrVariablesAsFactorforHist.Selector = Nothing
@@ -162,87 +158,21 @@ Partial Class dlgCircularDensityPlot
         Me.ucrVariablesAsFactorforHist.ucrSelector = Nothing
         Me.ucrVariablesAsFactorforHist.ucrVariableSelector = Nothing
         '
-        'rdoFrequencyPolygon
-        '
-        Me.rdoFrequencyPolygon.Appearance = System.Windows.Forms.Appearance.Button
-        Me.rdoFrequencyPolygon.FlatAppearance.BorderColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoFrequencyPolygon.FlatAppearance.BorderSize = 2
-        Me.rdoFrequencyPolygon.FlatAppearance.CheckedBackColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoFrequencyPolygon.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.rdoFrequencyPolygon.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.rdoFrequencyPolygon.Location = New System.Drawing.Point(267, 9)
-        Me.rdoFrequencyPolygon.Name = "rdoFrequencyPolygon"
-        Me.rdoFrequencyPolygon.Size = New System.Drawing.Size(125, 28)
-        Me.rdoFrequencyPolygon.TabIndex = 31
-        Me.rdoFrequencyPolygon.TabStop = True
-        Me.rdoFrequencyPolygon.Tag = "Frequency_Polygon"
-        Me.rdoFrequencyPolygon.Text = "Frequency Polygon"
-        Me.rdoFrequencyPolygon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
-        Me.rdoFrequencyPolygon.UseVisualStyleBackColor = True
-        '
-        'rdoDensity
-        '
-        Me.rdoDensity.Appearance = System.Windows.Forms.Appearance.Button
-        Me.rdoDensity.FlatAppearance.BorderColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoDensity.FlatAppearance.BorderSize = 2
-        Me.rdoDensity.FlatAppearance.CheckedBackColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoDensity.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.rdoDensity.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.rdoDensity.Location = New System.Drawing.Point(144, 9)
-        Me.rdoDensity.Name = "rdoDensity"
-        Me.rdoDensity.Size = New System.Drawing.Size(125, 28)
-        Me.rdoDensity.TabIndex = 30
-        Me.rdoDensity.TabStop = True
-        Me.rdoDensity.Tag = "Density"
-        Me.rdoDensity.Text = "Density"
-        Me.rdoDensity.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
-        Me.rdoDensity.UseVisualStyleBackColor = True
-        '
-        'rdoHistogram
-        '
-        Me.rdoHistogram.Appearance = System.Windows.Forms.Appearance.Button
-        Me.rdoHistogram.FlatAppearance.BorderColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoHistogram.FlatAppearance.BorderSize = 2
-        Me.rdoHistogram.FlatAppearance.CheckedBackColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoHistogram.FlatStyle = System.Windows.Forms.FlatStyle.Flat
-        Me.rdoHistogram.ImeMode = System.Windows.Forms.ImeMode.NoControl
-        Me.rdoHistogram.Location = New System.Drawing.Point(21, 9)
-        Me.rdoHistogram.Name = "rdoHistogram"
-        Me.rdoHistogram.Size = New System.Drawing.Size(125, 28)
-        Me.rdoHistogram.TabIndex = 29
-        Me.rdoHistogram.TabStop = True
-        Me.rdoHistogram.Tag = "Histogram"
-        Me.rdoHistogram.Text = "Histogram"
-        Me.rdoHistogram.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
-        Me.rdoHistogram.UseVisualStyleBackColor = True
-        '
-        'ucrPnlOptions
-        '
-        Me.ucrPnlOptions.Location = New System.Drawing.Point(20, 8)
-        Me.ucrPnlOptions.Margin = New System.Windows.Forms.Padding(5)
-        Me.ucrPnlOptions.Name = "ucrPnlOptions"
-        Me.ucrPnlOptions.Size = New System.Drawing.Size(373, 30)
-        Me.ucrPnlOptions.TabIndex = 28
-        '
         'dlgCircularDensityPlot
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(412, 427)
-        Me.Controls.Add(Me.rdoFrequencyPolygon)
-        Me.Controls.Add(Me.rdoDensity)
-        Me.Controls.Add(Me.rdoHistogram)
-        Me.Controls.Add(Me.ucrPnlOptions)
+        Me.ClientSize = New System.Drawing.Size(412, 392)
         Me.Controls.Add(Me.ucrVariablesAsFactorforHist)
         Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.lblStats)
         Me.Controls.Add(Me.ucrInputStats)
         Me.Controls.Add(Me.ucrChkPercentages)
-        Me.Controls.Add(Me.ucrSaveHist)
+        Me.Controls.Add(Me.ucrSavePlot)
         Me.Controls.Add(Me.ucrFactorReceiver)
-        Me.Controls.Add(Me.cmdHistogramOptions)
+        Me.Controls.Add(Me.cmdDensityOptions)
         Me.Controls.Add(Me.cmdOptions)
-        Me.Controls.Add(Me.ucrHistogramSelector)
+        Me.Controls.Add(Me.ucrDensitySelector)
         Me.Controls.Add(Me.lblfactor)
         Me.Controls.Add(Me.ucrBase)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow
@@ -260,16 +190,12 @@ Partial Class dlgCircularDensityPlot
     Friend WithEvents lblStats As Label
     Friend WithEvents ucrInputStats As ucrInputComboBox
     Friend WithEvents ucrChkPercentages As ucrCheck
-    Friend WithEvents ucrSaveHist As ucrSave
+    Friend WithEvents ucrSavePlot As ucrSave
     Friend WithEvents ucrFactorReceiver As ucrReceiverSingle
-    Friend WithEvents cmdHistogramOptions As Button
+    Friend WithEvents cmdDensityOptions As Button
     Friend WithEvents cmdOptions As Button
-    Friend WithEvents ucrHistogramSelector As ucrSelectorByDataFrameAddRemove
+    Friend WithEvents ucrDensitySelector As ucrSelectorByDataFrameAddRemove
     Friend WithEvents lblfactor As Label
     Friend WithEvents Label1 As Label
     Friend WithEvents ucrVariablesAsFactorforHist As ucrVariablesAsFactor
-    Friend WithEvents rdoFrequencyPolygon As RadioButton
-    Friend WithEvents rdoDensity As RadioButton
-    Friend WithEvents rdoHistogram As RadioButton
-    Friend WithEvents ucrPnlOptions As UcrPanel
 End Class

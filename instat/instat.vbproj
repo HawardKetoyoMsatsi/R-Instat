@@ -322,10 +322,10 @@
     <Compile Include="dlgWindPollutionRose.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="sdgDensityLaterOptions.Designer.vb">
-      <DependentUpon>sdgDensityLaterOptions.vb</DependentUpon>
+    <Compile Include="sdgDensityLayerOptions.Designer.vb">
+      <DependentUpon>sdgDensityLayerOptions.vb</DependentUpon>
     </Compile>
-    <Compile Include="sdgDensityLaterOptions.vb">
+    <Compile Include="sdgDensityLayerOptions.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="sdgDensityPlot.Designer.vb">
@@ -2741,8 +2741,8 @@
     <EmbeddedResource Include="dlgWindPollutionRose.resx">
       <DependentUpon>dlgWindPollutionRose.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="sdgDensityLaterOptions.resx">
-      <DependentUpon>sdgDensityLaterOptions.vb</DependentUpon>
+    <EmbeddedResource Include="sdgDensityLayerOptions.resx">
+      <DependentUpon>sdgDensityLayerOptions.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="sdgDensityPlot.resx">
       <DependentUpon>sdgDensityPlot.vb</DependentUpon>
