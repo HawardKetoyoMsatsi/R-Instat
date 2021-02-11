@@ -178,8 +178,6 @@ Public Class dlgClimaticBoxPlot
         clsTextElementFunc.SetPackageName("ggplot2")
         clsTextElementFunc.SetRCommand("element_text")
         clsTextElementFunc.AddParameter("angle", "90", iPosition:=0)
-        clsTextElementFunc.AddParameter("hjust", "1", iPosition:=1)
-        clsTextElementFunc.AddParameter("vjust", "0.5", iPosition:=2)
         ucrChkVerticalXTickMarkers.SetText("Vertical X Tick Markers")
         ucrChkVerticalXTickMarkers.SetParameter(clsThemeParam, bNewAddRemoveParameter:=True, bNewChangeParameterValue:=False)
 
@@ -223,8 +221,7 @@ Public Class dlgClimaticBoxPlot
         clsFacetOp.SetOperation("~")
         clsFacetOp.bForceIncludeOperation = True
         clsFacetOp.bBrackets = False
-        clsFacetFunction.AddParameter("facets", clsROperatorParameter:=clsFacetOp, iPosition:=0)
-        clsFacetFunction.AddParameter("drop", "FALSE", iPosition:=1)
+        clsFacetFunction.AddParameter("facets", clsROperatorParameter:=clsFacetOp)
 
         clsFilterElementOperator.SetOperation(">")
         clsFilterElementOperator.bBrackets = False
@@ -263,7 +260,7 @@ Public Class dlgClimaticBoxPlot
         clsRaesFunction.SetRCommand("aes")
         clsRaesFunction.AddParameter("x", Chr(34) & Chr(34))
 
-        clsAsFactorFunction.SetRCommand("make_factor")
+        clsAsFactorFunction.SetRCommand("as.factor")
 
         clsRgeomPlotFunction.SetPackageName("ggplot2")
         clsRgeomPlotFunction.SetRCommand("geom_boxplot")
@@ -285,7 +282,7 @@ Public Class dlgClimaticBoxPlot
 
         clsBaseOperator.AddParameter("theme", clsRFunctionParameter:=clsThemeFunc, bIncludeArgumentName:=False)
 
-        clsXlabsFunction.AddParameter("label", "NULL", bIncludeArgumentName:=False)
+        clsXlabsFunction.AddParameter("label", Chr(34) & "" & Chr(34), bIncludeArgumentName:=False)
         clsBaseOperator.AddParameter("xlab", clsRFunctionParameter:=clsXlabsFunction, bIncludeArgumentName:=False)
 
         clsBaseOperator.SetAssignTo("last_graph", strTempDataframe:=ucrSelectorClimaticBoxPlot.ucrAvailableDataFrames.cboAvailableDataFrames.Text, strTempGraph:="last_graph")

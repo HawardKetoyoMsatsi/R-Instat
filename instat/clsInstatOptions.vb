@@ -36,7 +36,6 @@ Imports RDotNet
     Public bCommandsinOutput As Nullable(Of Boolean)
     Public bIncludeCommentDefault As Nullable(Of Boolean) 'sets the default for comments on the dialog
     Public bShowProcurementMenu As Nullable(Of Boolean)
-    Public bShowStructuredMenu As Nullable(Of Boolean)
     Public bShowClimaticMenu As Nullable(Of Boolean)
     Public bShowOptionsByContextMenu As Nullable(Of Boolean)
     Public iDigits As Nullable(Of Integer)
@@ -58,7 +57,6 @@ Imports RDotNet
         bCommandsinOutput = clsInstatOptionsDefaults.DEFAULTbCommandsinOutput
         bIncludeCommentDefault = clsInstatOptionsDefaults.DEFAULTbIncludeCommentDefault
         bShowClimaticMenu = clsInstatOptionsDefaults.DEFAULTbShowClimaticMenu
-        bShowStructuredMenu = clsInstatOptionsDefaults.DEFAULTbShowStructuredMenu
         bShowProcurementMenu = clsInstatOptionsDefaults.DEFAULTbShowProcurementMenu
         bShowOptionsByContextMenu = clsInstatOptionsDefaults.DEFAULTbShowOptionsByContextMenu
         fntOutput = clsInstatOptionsDefaults.DEFAULTfntOutput
@@ -201,12 +199,6 @@ Imports RDotNet
             SetShowProcurementMenu(bShowProcurementMenu)
         Else
             SetShowProcurementMenu(clsInstatOptionsDefaults.DEFAULTbShowProcurementMenu)
-        End If
-
-        If bShowStructuredMenu.HasValue Then
-            SetShowStructuredMenu(bShowStructuredMenu)
-        Else
-            SetShowStructuredMenu(clsInstatOptionsDefaults.DEFAULTbShowStructuredMenu)
         End If
 
         If bShowClimaticMenu.HasValue Then
@@ -421,11 +413,6 @@ Imports RDotNet
     Public Sub SetShowProcurementMenu(bNewShowProcurementMenu As Boolean)
         bShowProcurementMenu = bNewShowProcurementMenu
         frmMain.SetShowProcurementMenu(bNewShowProcurementMenu)
-    End Sub
-
-    Public Sub SetShowStructuredMenu(bNewShowStructuredMenu As Boolean)
-        bShowStructuredMenu = bNewShowStructuredMenu
-        frmMain.SetShowStructuredMenu(bNewShowStructuredMenu)
     End Sub
 
     Public Sub SetShowClimaticMenu(bNewShowClimaticMenu As Boolean)

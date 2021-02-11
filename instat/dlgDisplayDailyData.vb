@@ -22,7 +22,6 @@ Public Class dlgDisplayDailyData
     Private iSaveYLocation As Integer
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
-    Private bRCodeSet As Boolean = True
     Private lstCheckboxes As New List(Of ucrCheck)
     Private clsDisplayDailyTable, clsDisplayDailyGraphFunction, clsConcFunction As New RFunction
     Private clsGGplotFunction, clsGeomLineFunction, clsGeomRugFunction, clsThemeFunction, clsThemeGreyFunction As New RFunction
@@ -33,7 +32,6 @@ Public Class dlgDisplayDailyData
 
     Private Sub dlgDisplayDailyData_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         autoTranslate(Me)
-        bRCodeSet = False
         If bFirstLoad Then
             iBasicHeight = Me.Height
             iBaseMaxY = ucrBase.Location.Y
@@ -45,7 +43,6 @@ Public Class dlgDisplayDailyData
             SetDefaults()
         End If
         SetRCodeForControls(bReset)
-        bRCodeSet = True
         DialogSize()
         bReset = False
         TestOkEnabled()
@@ -109,14 +106,12 @@ Public Class dlgDisplayDailyData
 
 
         ucrInputGraphRugColur.SetParameter(New RParameter("colour", 1))
-        dctGRugColour.Add("Black", Chr(34) & "black" & Chr(34))
         dctGRugColour.Add("Red", Chr(34) & "red" & Chr(34))
+        dctGRugColour.Add("Black", Chr(34) & "black" & Chr(34))
         dctGRugColour.Add("Blue", Chr(34) & "blue" & Chr(34))
         dctGRugColour.Add("Yellow", Chr(34) & "yellow" & Chr(34))
         dctGRugColour.Add("Green", Chr(34) & "green" & Chr(34))
         dctGRugColour.Add("Violet", Chr(34) & "violet" & Chr(34))
-        dctGRugColour.Add("White", Chr(34) & "white" & Chr(34))
-        dctGRugColour.Add("None", Chr(34) & "none" & Chr(34))
         ucrInputGraphRugColur.SetItems(dctGRugColour)
         ucrInputGraphRugColur.bAllowNonConditionValues = True
 
@@ -315,7 +310,7 @@ Public Class dlgDisplayDailyData
         clsGeomRugFunction.SetPackageName("ggplot2")
         clsGeomRugFunction.SetRCommand("geom_rug")
         clsGeomRugFunction.AddParameter("data", clsROperatorParameter:=clsNAFilterOperator, iPosition:=0)
-        clsGeomRugFunction.AddParameter("colour", Chr(34) & "black" & Chr(34), iPosition:=1)
+        clsGeomRugFunction.AddParameter("colour", Chr(34) & "red" & Chr(34), iPosition:=1)
 
         clsThemeGreyFunction.SetRCommand("theme_grey")
 
@@ -429,13 +424,12 @@ Public Class dlgDisplayDailyData
             Me.Size = New System.Drawing.Size(Me.Width, iBasicHeight * 0.93)
             ucrBase.Location = New Point(ucrBase.Location.X, iBaseMaxY / 1.1)
             ucrSaveGraph.Location = New Point(ucrSaveGraph.Location.X, iSaveYLocation / 1.1)
-        ElseIf rdoTable.Checked Then
+        ElseIf rdoTable.Checked OrElse rdoGraph.Checked Then
             Me.Size = New System.Drawing.Size(Me.Width, iBasicHeight)
             ucrBase.Location = New Point(ucrBase.Location.X, iBaseMaxY)
-        ElseIf rdoGraph.Checked Then
-            Me.Size = New System.Drawing.Size(Me.Width, iBasicHeight / 1.1)
-            ucrBase.Location = New Point(ucrBase.Location.X, iBaseMaxY / 1.116)
-            ucrSaveGraph.Location = New Point(ucrSaveGraph.Location.X, iSaveYLocation / 1.12)
+            If rdoGraph.Checked Then
+                ucrSaveGraph.Location = New Point(ucrSaveGraph.Location.X, iSaveYLocation)
+            End If
         End If
     End Sub
 
@@ -493,9 +487,7 @@ Public Class dlgDisplayDailyData
     End Sub
 
     Private Sub ucrReceiverMultipleElements_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrReceiverMultipleElements.ControlValueChanged, ucrReceiverStations.ControlValueChanged
-        If bRCodeSet Then
-            SetFacetItems()
-        End If
+        SetFacetItems()
         StackingFunction()
     End Sub
 
@@ -570,14 +562,5 @@ Public Class dlgDisplayDailyData
     Private Sub ucrSelectorDisplayDailyClimaticData_DataFrameChanged() Handles ucrSelectorDisplayDailyClimaticData.DataFrameChanged
         clsGGplotFunction.AddParameter("data", clsRFunctionParameter:=ucrSelectorDisplayDailyClimaticData.ucrAvailableDataFrames.clsCurrDataFrame, iPosition:=0)
         clsNAFilterOperator.AddParameter("data", clsRFunctionParameter:=ucrSelectorDisplayDailyClimaticData.ucrAvailableDataFrames.clsCurrDataFrame, iPosition:=0)
-    End Sub
-
-    Private Sub ucrInputGraphRugColur_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrInputGraphRugColur.ControlValueChanged
-        If ucrInputGraphRugColur.GetText = "None" Then
-            clsGgPlotOperator.RemoveParameterByName("geom_rug")
-        Else
-
-            clsGgPlotOperator.AddParameter("geom_rug", clsRFunctionParameter:=clsGeomRugFunction, iPosition:=2)
-        End If
     End Sub
 End Class

@@ -113,15 +113,14 @@ Partial Class dlgOptions
         Me.ucrChkViewProcurementMenu = New instat.ucrCheck()
         Me.ucrChkViewClimaticMenu = New instat.ucrCheck()
         Me.tbpClimsoft = New System.Windows.Forms.TabPage()
-        Me.lblUserName = New System.Windows.Forms.Label()
-        Me.lblPort = New System.Windows.Forms.Label()
-        Me.lblHost = New System.Windows.Forms.Label()
-        Me.lblDatabaseName = New System.Windows.Forms.Label()
         Me.ucrInputUserName = New instat.ucrInputTextBox()
         Me.ucrInputPort = New instat.ucrInputTextBox()
         Me.ucrInputHost = New instat.ucrInputTextBox()
         Me.ucrInputDatabaseName = New instat.ucrInputTextBox()
-        Me.ucrChkViewStructuredMenu = New instat.ucrCheck()
+        Me.lblUserName = New System.Windows.Forms.Label()
+        Me.lblPort = New System.Windows.Forms.Label()
+        Me.lblHost = New System.Windows.Forms.Label()
+        Me.lblDatabaseName = New System.Windows.Forms.Label()
         CType(Me.spltControls, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.spltControls.Panel1.SuspendLayout()
         Me.spltControls.Panel2.SuspendLayout()
@@ -656,7 +655,6 @@ Partial Class dlgOptions
         '
         'tbpTailoredMenus
         '
-        Me.tbpTailoredMenus.Controls.Add(Me.ucrChkViewStructuredMenu)
         Me.tbpTailoredMenus.Controls.Add(Me.ucrChkViewOptionsByContextMenu)
         Me.tbpTailoredMenus.Controls.Add(Me.ucrChkViewProcurementMenu)
         Me.tbpTailoredMenus.Controls.Add(Me.ucrChkViewClimaticMenu)
@@ -696,26 +694,6 @@ Partial Class dlgOptions
         Me.tbpClimsoft.Name = "tbpClimsoft"
         Me.tbpClimsoft.UseVisualStyleBackColor = True
         '
-        'lblUserName
-        '
-        resources.ApplyResources(Me.lblUserName, "lblUserName")
-        Me.lblUserName.Name = "lblUserName"
-        '
-        'lblPort
-        '
-        resources.ApplyResources(Me.lblPort, "lblPort")
-        Me.lblPort.Name = "lblPort"
-        '
-        'lblHost
-        '
-        resources.ApplyResources(Me.lblHost, "lblHost")
-        Me.lblHost.Name = "lblHost"
-        '
-        'lblDatabaseName
-        '
-        resources.ApplyResources(Me.lblDatabaseName, "lblDatabaseName")
-        Me.lblDatabaseName.Name = "lblDatabaseName"
-        '
         'ucrInputUserName
         '
         Me.ucrInputUserName.AddQuotesIfUnrecognised = True
@@ -748,11 +726,25 @@ Partial Class dlgOptions
         resources.ApplyResources(Me.ucrInputDatabaseName, "ucrInputDatabaseName")
         Me.ucrInputDatabaseName.Name = "ucrInputDatabaseName"
         '
-        'ucrChkViewStructuredMenu
+        'lblUserName
         '
-        Me.ucrChkViewStructuredMenu.Checked = False
-        resources.ApplyResources(Me.ucrChkViewStructuredMenu, "ucrChkViewStructuredMenu")
-        Me.ucrChkViewStructuredMenu.Name = "ucrChkViewStructuredMenu"
+        resources.ApplyResources(Me.lblUserName, "lblUserName")
+        Me.lblUserName.Name = "lblUserName"
+        '
+        'lblPort
+        '
+        resources.ApplyResources(Me.lblPort, "lblPort")
+        Me.lblPort.Name = "lblPort"
+        '
+        'lblHost
+        '
+        resources.ApplyResources(Me.lblHost, "lblHost")
+        Me.lblHost.Name = "lblHost"
+        '
+        'lblDatabaseName
+        '
+        resources.ApplyResources(Me.lblDatabaseName, "lblDatabaseName")
+        Me.lblDatabaseName.Name = "lblDatabaseName"
         '
         'dlgOptions
         '
@@ -891,5 +883,4 @@ Partial Class dlgOptions
     Friend WithEvents lblPort As Label
     Friend WithEvents lblHost As Label
     Friend WithEvents lblDatabaseName As Label
-    Friend WithEvents ucrChkViewStructuredMenu As ucrCheck
 End Class
