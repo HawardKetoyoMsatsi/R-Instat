@@ -15,188 +15,101 @@
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Imports instat.Translations
+
 Public Class dlgCircularDensityPlot
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
-    Private clsBaseOperator As New ROperator
-    Private clsRggplotFunction As New RFunction
-    Private clsRgeomPlotFunction As New RFunction
-    Private clsRaesFunction As New RFunction
-    Private clsLabsFunction As New RFunction
-    Private clsXlabsFunction As New RFunction
-    Private clsYlabFunction As New RFunction
-    Private clsXScalecontinuousFunction As New RFunction
-    Private clsYScalecontinuousFunction As New RFunction
-    Private clsRFacetFunction As New RFunction
-    Private clsThemeFunction As New RFunction
-    Private clsHistAesFunction As New RFunction
-    Private dctThemeFunctions As New Dictionary(Of String, RFunction)
-    Private bResetSubdialog As Boolean = True
-    Private clsLocalRaesFunction As New RFunction
-    Private bResetHistLayerSubdialog As Boolean = True
-    Private clsPercentage As New RFunction
-    Private clsCoordPolarFunction As New RFunction
-    Private clsCoordPolarStartOperator As New ROperator
-    Private clsXScaleDateFunction As New RFunction
-    Private clsYScaleDateFunction As New RFunction
-
-    'Parameter names for geoms
-    Private strFirstParameterName As String = "geomfunc"
-    Private strGeomParameterNames() As String = {strFirstParameterName}
-
-
+    Private clsDensityFunction As RFunction
+    Private clsPlotFunction As RFunction
     Private Sub dlgCircularDensityPlot_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
             InitialiseDialog()
             bFirstLoad = False
         End If
-
         If bReset Then
             SetDefaults()
         End If
-
         SetRCodeForControls(bReset)
         bReset = False
         autoTranslate(Me)
         TestOkEnabled()
-
-        'SetOptionsButtonstext()
     End Sub
 
     Private Sub InitialiseDialog()
-        Dim dctStats As New Dictionary(Of String, String)
-        ucrBase.clsRsyntax.bExcludeAssignedFunctionOutput = False
+        Dim dctKernel As New Dictionary(Of String, String)
+
         ucrBase.clsRsyntax.iCallType = 3
-        ucrBase.iHelpTopicID = 435
+        ucrBase.clsRsyntax.bExcludeAssignedFunctionOutput = False
 
-        'ucrPnlOptions.AddRadioButton(rdoHistogram)
-        'ucrPnlOptions.AddRadioButton(rdoDensity)
-        'ucrPnlOptions.AddRadioButton(rdoFrequencyPolygon)
+        ucrSelectorDataFrame.SetParameter(New RParameter("data", 0))
+        ucrSelectorDataFrame.SetParameterIsrfunction()
 
-        'ucrPnlOptions.AddFunctionNamesCondition(rdoHistogram, "geom_histogram")
-        'ucrPnlOptions.AddFunctionNamesCondition(rdoDensity, "geom_density")
-        'ucrPnlOptions.AddFunctionNamesCondition(rdoFrequencyPolygon, "geom_freqpoly")
-
-        ucrDensitySelector.SetParameter(New RParameter("data", 0))
-        ucrDensitySelector.SetParameterIsrfunction()
-
-        ucrFactorReceiver.SetParameter(New RParameter("colour", 1))
-        ucrFactorReceiver.Selector = ucrDensitySelector
-        ucrFactorReceiver.SetIncludedDataTypes({"factor"})
-        ucrFactorReceiver.strSelectorHeading = "Factors"
-        'can put in colour for density and polygon but fill for Histogram
-        ucrFactorReceiver.bWithQuotes = False
-        ucrFactorReceiver.SetParameterIsString()
-
-        ucrInputStats.SetParameter(New RParameter("y", 0))
-        dctStats.Add("Counts", "stat(count)")
-        dctStats.Add("Fractions", "stat(count/sum(count))")
-        dctStats.Add("Scaled Fractions", "stat(count/max(count))")
-        ucrInputStats.SetDropDownStyleAsNonEditable()
-        ucrInputStats.SetItems(dctStats)
-        ucrInputStats.AddToLinkedControls(ucrChkPercentages, {"Fractions"}, bNewLinkedHideIfParameterMissing:=True, bNewLinkedChangeToDefaultState:=True, objNewDefaultState:=False)
-
-        ucrChkPercentages.SetText("percentages")
-        ucrChkPercentages.AddParameterPresentCondition(True, "scale")
-        ucrChkPercentages.AddParameterPresentCondition(False, "scale", False)
+        ucrReceiverVariable.SetParameter(New RParameter("x", 0))
+        ucrReceiverVariable.Selector = ucrSelectorDataFrame
+        ucrReceiverVariable.SetParameterIsRFunction()
+        ucrReceiverVariable.SetIncludedDataTypes({"numeric"})
+        ucrReceiverVariable.strSelectorHeading = "Numerics"
 
 
-        ucrVariablesAsFactorforHist.SetParameter(New RParameter("x", 0))
-        ucrVariablesAsFactorforHist.SetFactorReceiver(ucrFactorReceiver)
-        ucrVariablesAsFactorforHist.Selector = ucrDensitySelector
-        ucrVariablesAsFactorforHist.SetIncludedDataTypes({"numeric"})
-        ucrVariablesAsFactorforHist.strSelectorHeading = "Numerics"
-        ucrVariablesAsFactorforHist.bWithQuotes = False
-        ucrVariablesAsFactorforHist.SetParameterIsString()
+        ucrInputComboKernel.SetParameter(New RParameter("kernel", 2))
+        dctKernel.Add("vonmises", Chr(34) & "vonmises" & Chr(34))
+        dctKernel.Add("wrappednormal", Chr(34) & "wrappednormal" & Chr(34))
+        ucrInputComboKernel.SetItems(dctKernel)
+        ucrInputComboKernel.SetDropDownStyleAsNonEditable()
+        ucrInputComboKernel.SetDefaultState(Chr(34) & "vonmisess" & Chr(34))
+        ucrInputComboKernel.SetLinkedDisplayControl(lblKernel)
 
-        ucrSavePlot.SetPrefix("density")
-        ucrSavePlot.SetDataFrameSelector(ucrDensitySelector.ucrAvailableDataFrames)
-        ucrSavePlot.SetIsComboBox()
-        ucrSavePlot.SetCheckBoxText("Save Graph")
-        ucrSavePlot.SetSaveTypeAsGraph()
-        ucrSavePlot.SetAssignToIfUncheckedValue("last_graph")
+        ucrChkOmitMissing.SetText("Omit Missing Values")
+        ucrChkOmitMissing.SetParameter(New RParameter("na.rm", 3))
+        ucrChkOmitMissing.SetText("Omit Missing Values")
+        ucrChkOmitMissing.SetValuesCheckedAndUnchecked("TRUE", "FALSE")
+        ucrChkOmitMissing.SetRDefault("FALSE")
+
+        ucrInputBandWidth.SetParameter(New RParameter("bw", 1))
+        ucrInputBandWidth.SetValidationTypeAsNumeric()
+        ucrInputBandWidth.SetDefaultState(25)
+        ucrInputBandWidth.AddQuotesIfUnrecognised = False
+        ucrInputBandWidth.SetLinkedDisplayControl(lblBandWidth)
+
+        ucrSaveDensity.SetPrefix("circular_density")
+        ucrSaveDensity.SetDataFrameSelector(ucrSelectorDataFrame.ucrAvailableDataFrames)
+        ucrSaveDensity.SetIsComboBox()
+        ucrSaveDensity.SetCheckBoxText("Save Graph")
+        ucrSaveDensity.SetSaveTypeAsGraph()
+        ucrSaveDensity.SetAssignToIfUncheckedValue("last_graph")
     End Sub
 
     Private Sub SetDefaults()
-        clsBaseOperator = New ROperator
-        clsRggplotFunction = New RFunction
-        clsRgeomPlotFunction = New RFunction
-        clsRaesFunction = New RFunction
-        clsHistAesFunction = New RFunction
-        clsPercentage = New RFunction
+        clsDensityFunction = New RFunction
+        clsPlotFunction = New RFunction
 
-        ucrDensitySelector.Reset()
-        ucrDensitySelector.SetGgplotFunction(clsBaseOperator)
-        ucrSavePlot.Reset()
-        ucrVariablesAsFactorforHist.SetMeAsReceiver()
-        bResetSubdialog = True
-        bResetHistLayerSubdialog = True
-        TempOptionsDisabledInMultipleVariablesCase()
+        ucrSaveDensity.Reset()
+        ucrReceiverVariable.SetMeAsReceiver()
+        ucrSelectorDataFrame.Reset()
 
-        clsBaseOperator.SetOperation("+")
-        clsBaseOperator.AddParameter("ggplot", clsRFunctionParameter:=clsRggplotFunction, iPosition:=0)
-        clsBaseOperator.AddParameter(strFirstParameterName, clsRFunctionParameter:=clsRgeomPlotFunction, iPosition:=2)
-        clsRggplotFunction.SetPackageName("ggplot2")
-        clsRggplotFunction.SetRCommand("ggplot")
-        clsRggplotFunction.AddParameter("mapping", clsRFunctionParameter:=clsRaesFunction, iPosition:=1)
+        clsDensityFunction.SetPackageName("circular")
+        clsDensityFunction.SetRCommand("density.circular")
 
-        clsRaesFunction.SetPackageName("ggplot2")
-        clsRaesFunction.SetRCommand("aes")
+        clsPlotFunction.SetRCommand("plot")
+        clsPlotFunction.AddParameter("x", clsRFunctionParameter:=clsDensityFunction, iPosition:=0)
 
-        clsHistAesFunction.SetPackageName("ggplot2")
-        clsHistAesFunction.SetRCommand("aes")
-        clsHistAesFunction.AddParameter("y", "stat(count)", iPosition:=0)
-
-        clsRgeomPlotFunction.SetPackageName("ggplot2")
-        clsRgeomPlotFunction.SetRCommand("geom_density")
-        clsRgeomPlotFunction.AddParameter("mapping", clsRFunctionParameter:=clsHistAesFunction)
-
-
-        clsPercentage.SetPackageName("scales")
-        clsPercentage.SetRCommand("percent_format")
-
-        clsBaseOperator.AddParameter(GgplotDefaults.clsDefaultThemeParameter.Clone())
-        clsBaseOperator.AddParameter("coord_polar", clsRFunctionParameter:=GgplotDefaults.clsCoordPolarFunction.Clone(), iPosition:=20)
-
-        clsXlabsFunction = GgplotDefaults.clsXlabTitleFunction.Clone()
-        clsYlabFunction = GgplotDefaults.clsYlabTitleFunction.Clone()
-        clsLabsFunction = GgplotDefaults.clsDefaultLabs.Clone()
-        clsXScalecontinuousFunction = GgplotDefaults.clsXScalecontinuousFunction.Clone()
-        clsYScalecontinuousFunction = GgplotDefaults.clsYScalecontinuousFunction.Clone()
-        clsRFacetFunction = GgplotDefaults.clsFacetFunction.Clone()
-        dctThemeFunctions = New Dictionary(Of String, RFunction)(GgplotDefaults.dctThemeFunctions)
-        clsCoordPolarStartOperator = GgplotDefaults.clsCoordPolarStartOperator.Clone()
-        clsCoordPolarFunction = GgplotDefaults.clsCoordPolarFunction.Clone()
-        clsThemeFunction = GgplotDefaults.clsDefaultThemeFunction
-        clsLocalRaesFunction = GgplotDefaults.clsAesFunction.Clone()
-        clsXScaleDateFunction = GgplotDefaults.clsXScaleDateFunction.Clone()
-        clsYScaleDateFunction = GgplotDefaults.clsYScaleDateFunction.Clone()
-
-        cmdDensityOptions.Text = "Density Options"
-        cmdDensityOptions.Size = New Size(120, 25)
-
-        clsBaseOperator.SetAssignTo("last_graph", strTempDataframe:=ucrDensitySelector.ucrAvailableDataFrames.cboAvailableDataFrames.Text, strTempGraph:="last_graph")
-        ucrBase.clsRsyntax.SetBaseROperator(clsBaseOperator)
-        TestOkEnabled()
+        ucrBase.clsRsyntax.SetBaseRFunction(clsPlotFunction)
     End Sub
 
-    Public Sub SetRCodeForControls(bReset As Boolean)
-        ucrVariablesAsFactorforHist.SetRCode(clsRaesFunction, bReset)
-        ucrInputStats.SetRCode(clsHistAesFunction, bReset)
-        ucrFactorReceiver.SetRCode(clsRaesFunction, bReset)
-        ucrSavePlot.SetRCode(clsBaseOperator, bReset)
-        ucrDensitySelector.SetRCode(clsRggplotFunction, bReset)
-        'ucrPnlOptions.SetRCode(clsRgeomPlotFunction, bReset)
-        ucrChkPercentages.SetRCode(clsYScalecontinuousFunction, bReset)
+    Private Sub SetRCodeForControls(bReset As Boolean)
+        ucrInputBandWidth.AddAdditionalCodeParameterPair(clsDensityFunction, ucrInputBandWidth.GetParameter(), iAdditionalPairNo:=1)
+        ucrChkOmitMissing.AddAdditionalCodeParameterPair(clsDensityFunction, ucrChkOmitMissing.GetParameter(), iAdditionalPairNo:=1)
+        ucrInputComboKernel.AddAdditionalCodeParameterPair(clsDensityFunction, ucrInputComboKernel.GetParameter(), iAdditionalPairNo:=1)
 
+        ucrSaveDensity.SetRCode(clsPlotFunction, bReset)
+        ucrReceiverVariable.SetRCode(clsDensityFunction, bReset)
     End Sub
 
     Private Sub TestOkEnabled()
-        'Tests when ok can be enabled
-        If ucrVariablesAsFactorforHist.IsEmpty OrElse Not ucrSavePlot.IsComplete Then
-            ucrBase.OKEnabled(False)
-        Else
+        If ucrSaveDensity.IsComplete AndAlso Not ucrReceiverVariable.IsEmpty Then
             ucrBase.OKEnabled(True)
+        Else
+            ucrBase.OKEnabled(False)
         End If
     End Sub
 
@@ -206,52 +119,7 @@ Public Class dlgCircularDensityPlot
         TestOkEnabled()
     End Sub
 
-    Private Sub cmdHistogramOptions_Click(sender As Object, e As EventArgs) Handles cmdDensityOptions.Click
-        sdgDensityLayerOptions.SetupLayer(clsNewGgPlot:=clsRggplotFunction, clsNewGeomFunc:=clsRgeomPlotFunction, clsNewGlobalAesFunc:=clsRaesFunction, clsNewLocalAes:=clsLocalRaesFunction, bFixGeom:=True, ucrNewBaseSelector:=ucrDensitySelector, bApplyAesGlobally:=True, bReset:=bResetHistLayerSubdialog)
-        sdgDensityLayerOptions.ShowDialog()
-        bResetHistLayerSubdialog = False
-        For Each clsParam In clsRaesFunction.clsParameters
-            If clsParam.strArgumentName = "x" AndAlso (clsParam.strArgumentValue <> "value" OrElse ucrVariablesAsFactorforHist.bSingleVariable) Then
-                ucrVariablesAsFactorforHist.Add(clsParam.strArgumentValue)
-            ElseIf clsParam.strArgumentName = "colour" Then
-                ucrFactorReceiver.Add(clsParam.strArgumentValue)
-            End If
-        Next
-        clsRgeomPlotFunction.AddParameter("mapping", clsRFunctionParameter:=clsHistAesFunction) 'this is here because of the subdialog 
-        TestOkEnabled()
-    End Sub
-
-    Private Sub cmdOptions_Click(sender As Object, e As EventArgs) Handles cmdOptions.Click
-        sdgDensityPlot.SetRCode(clsBaseOperator, clsNewYScalecontinuousFunction:=clsYScalecontinuousFunction, clsNewXScalecontinuousFunction:=clsXScalecontinuousFunction, clsNewXLabsTitleFunction:=clsXlabsFunction, clsNewYLabTitleFunction:=clsYlabFunction, clsNewLabsFunction:=clsLabsFunction, clsNewThemeFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, clsNewFacetFunction:=clsRFacetFunction, ucrNewBaseSelector:=ucrDensitySelector, clsNewGlobalAesFunction:=clsRaesFunction, clsNewCoordPolarFunction:=clsCoordPolarFunction, clsNewCoordPolarStartOperator:=clsCoordPolarStartOperator, clsNewXScaleDateFunction:=clsXScaleDateFunction, clsNewYScaleDateFunction:=clsYScaleDateFunction, strMainDialogGeomParameterNames:=strGeomParameterNames, bReset:=bResetSubdialog)
-        clsYScalecontinuousFunction.AddParameter("labels", clsRFunctionParameter:=clsPercentage) ' This passes the percent function to the plot options
-        sdgDensityPlot.ShowDialog()
-        bResetSubdialog = False
-    End Sub
-
-    Private Sub TempOptionsDisabledInMultipleVariablesCase()
-        If ucrVariablesAsFactorforHist.bSingleVariable Then
-            cmdDensityOptions.Enabled = True
-            cmdOptions.Enabled = True
-        Else
-            cmdDensityOptions.Enabled = False
-            cmdOptions.Enabled = False
-        End If
-    End Sub
-
-    Private Sub Adding_Percentages(ucrChangedControl As ucrCore) Handles ucrInputStats.ControlValueChanged, ucrChkPercentages.ControlValueChanged
-        If ucrInputStats.GetText() = "Fractions" AndAlso ucrChkPercentages.Checked Then
-            clsYScalecontinuousFunction.AddParameter("labels", clsRFunctionParameter:=clsPercentage)
-            clsBaseOperator.AddParameter("scale", clsRFunctionParameter:=clsYScalecontinuousFunction)
-        Else
-            clsBaseOperator.RemoveParameterByName("scale")
-        End If
-    End Sub
-
-    Private Sub ucrVariablesAsFactorforHist_SelectionChanged() Handles ucrVariablesAsFactorforHist.SelectionChanged
-        TempOptionsDisabledInMultipleVariablesCase()
-    End Sub
-
-    Private Sub CoreControls_ControlContentsChanged() Handles ucrVariablesAsFactorforHist.ControlContentsChanged, ucrSavePlot.ControlContentsChanged
+    Private Sub CoreControls_ControlContentsChanged() Handles ucrReceiverVariable.ControlContentsChanged, ucrSaveDensity.ControlContentsChanged
         TestOkEnabled()
     End Sub
 End Class
