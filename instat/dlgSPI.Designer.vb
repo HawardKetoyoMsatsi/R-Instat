@@ -23,37 +23,44 @@ Partial Class dlgSPI
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(dlgSPI))
-        Me.lblStation = New System.Windows.Forms.Label()
+        Me.lblDate = New System.Windows.Forms.Label()
         Me.lblYear = New System.Windows.Forms.Label()
         Me.lblMonth = New System.Windows.Forms.Label()
         Me.lblData = New System.Windows.Forms.Label()
+        Me.grpIndex = New System.Windows.Forms.GroupBox()
         Me.rdoSPEI = New System.Windows.Forms.RadioButton()
         Me.rdoSPI = New System.Windows.Forms.RadioButton()
-        Me.ucrPnlIndex = New instat.UcrPanel()
         Me.lblTimeScale = New System.Windows.Forms.Label()
         Me.BackgroundWorker1 = New System.ComponentModel.BackgroundWorker()
         Me.grpKernel = New System.Windows.Forms.GroupBox()
-        Me.lblType = New System.Windows.Forms.Label()
-        Me.ucrInputType = New instat.ucrInputComboBox()
         Me.lblShift = New System.Windows.Forms.Label()
-        Me.ucrNudKernelShift = New instat.ucrNud()
+        Me.grpKernelType = New System.Windows.Forms.GroupBox()
+        Me.rdoRectangular = New System.Windows.Forms.RadioButton()
+        Me.rdoGaussian = New System.Windows.Forms.RadioButton()
+        Me.rdoCircular = New System.Windows.Forms.RadioButton()
+        Me.rdoTriangular = New System.Windows.Forms.RadioButton()
         Me.ucrSaveModel = New instat.ucrSave()
         Me.ucrSaveIndex = New instat.ucrSave()
+        Me.ucrPnlKernelType = New instat.UcrPanel()
+        Me.ucrNudKernelShift = New instat.ucrNud()
         Me.ucrNudTimeScale = New instat.ucrNud()
         Me.ucrChkOmitMissingValues = New instat.ucrCheck()
         Me.ucrBase = New instat.ucrButtons()
-        Me.ucrReceiverElement = New instat.ucrReceiverSingle()
+        Me.ucrPnlIndex = New instat.UcrPanel()
+        Me.ucrReceiverData = New instat.ucrReceiverSingle()
         Me.ucrReceiverMonth = New instat.ucrReceiverSingle()
         Me.ucrReceiverYear = New instat.ucrReceiverSingle()
-        Me.ucrReceiverStation = New instat.ucrReceiverSingle()
+        Me.ucrReceiverDate = New instat.ucrReceiverSingle()
         Me.ucrSelectorVariable = New instat.ucrSelectorByDataFrameAddRemove()
+        Me.grpIndex.SuspendLayout()
         Me.grpKernel.SuspendLayout()
+        Me.grpKernelType.SuspendLayout()
         Me.SuspendLayout()
         '
-        'lblStation
+        'lblDate
         '
-        resources.ApplyResources(Me.lblStation, "lblStation")
-        Me.lblStation.Name = "lblStation"
+        resources.ApplyResources(Me.lblDate, "lblDate")
+        Me.lblDate.Name = "lblDate"
         '
         'lblYear
         '
@@ -70,12 +77,18 @@ Partial Class dlgSPI
         resources.ApplyResources(Me.lblData, "lblData")
         Me.lblData.Name = "lblData"
         '
+        'grpIndex
+        '
+        Me.grpIndex.Controls.Add(Me.rdoSPEI)
+        Me.grpIndex.Controls.Add(Me.rdoSPI)
+        Me.grpIndex.Controls.Add(Me.ucrPnlIndex)
+        resources.ApplyResources(Me.grpIndex, "grpIndex")
+        Me.grpIndex.Name = "grpIndex"
+        Me.grpIndex.TabStop = False
+        '
         'rdoSPEI
         '
         resources.ApplyResources(Me.rdoSPEI, "rdoSPEI")
-        Me.rdoSPEI.FlatAppearance.BorderColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoSPEI.FlatAppearance.BorderSize = 2
-        Me.rdoSPEI.FlatAppearance.CheckedBackColor = System.Drawing.SystemColors.ActiveCaption
         Me.rdoSPEI.Name = "rdoSPEI"
         Me.rdoSPEI.TabStop = True
         Me.rdoSPEI.UseVisualStyleBackColor = True
@@ -83,17 +96,9 @@ Partial Class dlgSPI
         'rdoSPI
         '
         resources.ApplyResources(Me.rdoSPI, "rdoSPI")
-        Me.rdoSPI.FlatAppearance.BorderColor = System.Drawing.SystemColors.ActiveCaption
-        Me.rdoSPI.FlatAppearance.BorderSize = 2
-        Me.rdoSPI.FlatAppearance.CheckedBackColor = System.Drawing.SystemColors.ActiveCaption
         Me.rdoSPI.Name = "rdoSPI"
         Me.rdoSPI.TabStop = True
         Me.rdoSPI.UseVisualStyleBackColor = True
-        '
-        'ucrPnlIndex
-        '
-        resources.ApplyResources(Me.ucrPnlIndex, "ucrPnlIndex")
-        Me.ucrPnlIndex.Name = "ucrPnlIndex"
         '
         'lblTimeScale
         '
@@ -102,41 +107,56 @@ Partial Class dlgSPI
         '
         'grpKernel
         '
-        Me.grpKernel.Controls.Add(Me.lblType)
-        Me.grpKernel.Controls.Add(Me.ucrInputType)
         Me.grpKernel.Controls.Add(Me.lblShift)
+        Me.grpKernel.Controls.Add(Me.grpKernelType)
         Me.grpKernel.Controls.Add(Me.ucrNudKernelShift)
         resources.ApplyResources(Me.grpKernel, "grpKernel")
         Me.grpKernel.Name = "grpKernel"
         Me.grpKernel.TabStop = False
-        '
-        'lblType
-        '
-        resources.ApplyResources(Me.lblType, "lblType")
-        Me.lblType.Name = "lblType"
-        '
-        'ucrInputType
-        '
-        Me.ucrInputType.AddQuotesIfUnrecognised = True
-        Me.ucrInputType.GetSetSelectedIndex = -1
-        Me.ucrInputType.IsReadOnly = False
-        resources.ApplyResources(Me.ucrInputType, "ucrInputType")
-        Me.ucrInputType.Name = "ucrInputType"
         '
         'lblShift
         '
         resources.ApplyResources(Me.lblShift, "lblShift")
         Me.lblShift.Name = "lblShift"
         '
-        'ucrNudKernelShift
+        'grpKernelType
         '
-        Me.ucrNudKernelShift.DecimalPlaces = New Decimal(New Integer() {0, 0, 0, 0})
-        Me.ucrNudKernelShift.Increment = New Decimal(New Integer() {1, 0, 0, 0})
-        resources.ApplyResources(Me.ucrNudKernelShift, "ucrNudKernelShift")
-        Me.ucrNudKernelShift.Maximum = New Decimal(New Integer() {24, 0, 0, 0})
-        Me.ucrNudKernelShift.Minimum = New Decimal(New Integer() {0, 0, 0, 0})
-        Me.ucrNudKernelShift.Name = "ucrNudKernelShift"
-        Me.ucrNudKernelShift.Value = New Decimal(New Integer() {0, 0, 0, 0})
+        Me.grpKernelType.Controls.Add(Me.rdoRectangular)
+        Me.grpKernelType.Controls.Add(Me.rdoGaussian)
+        Me.grpKernelType.Controls.Add(Me.rdoCircular)
+        Me.grpKernelType.Controls.Add(Me.rdoTriangular)
+        Me.grpKernelType.Controls.Add(Me.ucrPnlKernelType)
+        resources.ApplyResources(Me.grpKernelType, "grpKernelType")
+        Me.grpKernelType.Name = "grpKernelType"
+        Me.grpKernelType.TabStop = False
+        '
+        'rdoRectangular
+        '
+        resources.ApplyResources(Me.rdoRectangular, "rdoRectangular")
+        Me.rdoRectangular.Name = "rdoRectangular"
+        Me.rdoRectangular.TabStop = True
+        Me.rdoRectangular.UseVisualStyleBackColor = True
+        '
+        'rdoGaussian
+        '
+        resources.ApplyResources(Me.rdoGaussian, "rdoGaussian")
+        Me.rdoGaussian.Name = "rdoGaussian"
+        Me.rdoGaussian.TabStop = True
+        Me.rdoGaussian.UseVisualStyleBackColor = True
+        '
+        'rdoCircular
+        '
+        resources.ApplyResources(Me.rdoCircular, "rdoCircular")
+        Me.rdoCircular.Name = "rdoCircular"
+        Me.rdoCircular.TabStop = True
+        Me.rdoCircular.UseVisualStyleBackColor = True
+        '
+        'rdoTriangular
+        '
+        resources.ApplyResources(Me.rdoTriangular, "rdoTriangular")
+        Me.rdoTriangular.Name = "rdoTriangular"
+        Me.rdoTriangular.TabStop = True
+        Me.rdoTriangular.UseVisualStyleBackColor = True
         '
         'ucrSaveModel
         '
@@ -147,6 +167,21 @@ Partial Class dlgSPI
         '
         resources.ApplyResources(Me.ucrSaveIndex, "ucrSaveIndex")
         Me.ucrSaveIndex.Name = "ucrSaveIndex"
+        '
+        'ucrPnlKernelType
+        '
+        resources.ApplyResources(Me.ucrPnlKernelType, "ucrPnlKernelType")
+        Me.ucrPnlKernelType.Name = "ucrPnlKernelType"
+        '
+        'ucrNudKernelShift
+        '
+        Me.ucrNudKernelShift.DecimalPlaces = New Decimal(New Integer() {0, 0, 0, 0})
+        Me.ucrNudKernelShift.Increment = New Decimal(New Integer() {1, 0, 0, 0})
+        resources.ApplyResources(Me.ucrNudKernelShift, "ucrNudKernelShift")
+        Me.ucrNudKernelShift.Maximum = New Decimal(New Integer() {24, 0, 0, 0})
+        Me.ucrNudKernelShift.Minimum = New Decimal(New Integer() {0, 0, 0, 0})
+        Me.ucrNudKernelShift.Name = "ucrNudKernelShift"
+        Me.ucrNudKernelShift.Value = New Decimal(New Integer() {0, 0, 0, 0})
         '
         'ucrNudTimeScale
         '
@@ -169,14 +204,19 @@ Partial Class dlgSPI
         resources.ApplyResources(Me.ucrBase, "ucrBase")
         Me.ucrBase.Name = "ucrBase"
         '
-        'ucrReceiverElement
+        'ucrPnlIndex
         '
-        Me.ucrReceiverElement.frmParent = Me
-        resources.ApplyResources(Me.ucrReceiverElement, "ucrReceiverElement")
-        Me.ucrReceiverElement.Name = "ucrReceiverElement"
-        Me.ucrReceiverElement.Selector = Nothing
-        Me.ucrReceiverElement.strNcFilePath = ""
-        Me.ucrReceiverElement.ucrSelector = Nothing
+        resources.ApplyResources(Me.ucrPnlIndex, "ucrPnlIndex")
+        Me.ucrPnlIndex.Name = "ucrPnlIndex"
+        '
+        'ucrReceiverData
+        '
+        Me.ucrReceiverData.frmParent = Me
+        resources.ApplyResources(Me.ucrReceiverData, "ucrReceiverData")
+        Me.ucrReceiverData.Name = "ucrReceiverData"
+        Me.ucrReceiverData.Selector = Nothing
+        Me.ucrReceiverData.strNcFilePath = ""
+        Me.ucrReceiverData.ucrSelector = Nothing
         '
         'ucrReceiverMonth
         '
@@ -196,14 +236,14 @@ Partial Class dlgSPI
         Me.ucrReceiverYear.strNcFilePath = ""
         Me.ucrReceiverYear.ucrSelector = Nothing
         '
-        'ucrReceiverStation
+        'ucrReceiverDate
         '
-        Me.ucrReceiverStation.frmParent = Me
-        resources.ApplyResources(Me.ucrReceiverStation, "ucrReceiverStation")
-        Me.ucrReceiverStation.Name = "ucrReceiverStation"
-        Me.ucrReceiverStation.Selector = Nothing
-        Me.ucrReceiverStation.strNcFilePath = ""
-        Me.ucrReceiverStation.ucrSelector = Nothing
+        Me.ucrReceiverDate.frmParent = Me
+        resources.ApplyResources(Me.ucrReceiverDate, "ucrReceiverDate")
+        Me.ucrReceiverDate.Name = "ucrReceiverDate"
+        Me.ucrReceiverDate.Selector = Nothing
+        Me.ucrReceiverDate.strNcFilePath = ""
+        Me.ucrReceiverDate.ucrSelector = Nothing
         '
         'ucrSelectorVariable
         '
@@ -217,9 +257,6 @@ Partial Class dlgSPI
         '
         resources.ApplyResources(Me, "$this")
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.Controls.Add(Me.rdoSPEI)
-        Me.Controls.Add(Me.rdoSPI)
-        Me.Controls.Add(Me.ucrPnlIndex)
         Me.Controls.Add(Me.ucrSaveModel)
         Me.Controls.Add(Me.ucrSaveIndex)
         Me.Controls.Add(Me.grpKernel)
@@ -227,34 +264,40 @@ Partial Class dlgSPI
         Me.Controls.Add(Me.ucrChkOmitMissingValues)
         Me.Controls.Add(Me.ucrBase)
         Me.Controls.Add(Me.lblTimeScale)
+        Me.Controls.Add(Me.grpIndex)
         Me.Controls.Add(Me.lblData)
         Me.Controls.Add(Me.lblMonth)
         Me.Controls.Add(Me.lblYear)
-        Me.Controls.Add(Me.lblStation)
-        Me.Controls.Add(Me.ucrReceiverElement)
+        Me.Controls.Add(Me.lblDate)
+        Me.Controls.Add(Me.ucrReceiverData)
         Me.Controls.Add(Me.ucrReceiverMonth)
         Me.Controls.Add(Me.ucrReceiverYear)
-        Me.Controls.Add(Me.ucrReceiverStation)
+        Me.Controls.Add(Me.ucrReceiverDate)
         Me.Controls.Add(Me.ucrSelectorVariable)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.Name = "dlgSPI"
+        Me.grpIndex.ResumeLayout(False)
+        Me.grpIndex.PerformLayout()
         Me.grpKernel.ResumeLayout(False)
         Me.grpKernel.PerformLayout()
+        Me.grpKernelType.ResumeLayout(False)
+        Me.grpKernelType.PerformLayout()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
     End Sub
     Friend WithEvents ucrSelectorVariable As ucrSelectorByDataFrameAddRemove
-    Friend WithEvents ucrReceiverStation As ucrReceiverSingle
-    Friend WithEvents lblStation As Label
-    Friend WithEvents ucrReceiverElement As ucrReceiverSingle
+    Friend WithEvents ucrReceiverDate As ucrReceiverSingle
+    Friend WithEvents lblDate As Label
+    Friend WithEvents ucrReceiverData As ucrReceiverSingle
     Friend WithEvents ucrReceiverMonth As ucrReceiverSingle
     Friend WithEvents ucrReceiverYear As ucrReceiverSingle
     Friend WithEvents lblData As Label
     Friend WithEvents lblMonth As Label
     Friend WithEvents lblYear As Label
+    Friend WithEvents grpIndex As GroupBox
     Friend WithEvents rdoSPEI As RadioButton
     Friend WithEvents rdoSPI As RadioButton
     Friend WithEvents lblTimeScale As Label
@@ -263,11 +306,15 @@ Partial Class dlgSPI
     Friend WithEvents BackgroundWorker1 As System.ComponentModel.BackgroundWorker
     Friend WithEvents ucrNudTimeScale As ucrNud
     Friend WithEvents grpKernel As GroupBox
+    Friend WithEvents rdoRectangular As RadioButton
+    Friend WithEvents rdoTriangular As RadioButton
+    Friend WithEvents ucrPnlKernelType As UcrPanel
+    Friend WithEvents rdoCircular As RadioButton
+    Friend WithEvents rdoGaussian As RadioButton
     Friend WithEvents lblShift As Label
     Friend WithEvents ucrNudKernelShift As ucrNud
     Friend WithEvents ucrPnlIndex As UcrPanel
     Friend WithEvents ucrSaveIndex As ucrSave
+    Friend WithEvents grpKernelType As GroupBox
     Friend WithEvents ucrSaveModel As ucrSave
-    Friend WithEvents lblType As Label
-    Friend WithEvents ucrInputType As ucrInputComboBox
 End Class
