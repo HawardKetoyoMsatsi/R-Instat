@@ -2408,4 +2408,8 @@ Public Class frmMain
         dlgPasteSpecial.ShowDialog()
     End Sub
 
+    Private Sub RegressionAnalysisToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles RegressionAnalysisToolStripMenuItem.Click
+        dlgRegressionAnalysis.ShowDialog()
+
+    End Sub
 End Class

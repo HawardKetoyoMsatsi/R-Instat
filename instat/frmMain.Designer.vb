@@ -664,6 +664,7 @@ Partial Class frmMain
         Me.mnuDataFrameMetadata = New System.Windows.Forms.ToolStripMenuItem()
         Me.mnuScriptFile = New System.Windows.Forms.ToolStripMenuItem()
         Me.mnuLogFile = New System.Windows.Forms.ToolStripMenuItem()
+        Me.RegressionAnalysisToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.stsStrip.SuspendLayout()
         Me.Tool_strip.SuspendLayout()
         Me.mnuBar.SuspendLayout()
@@ -915,7 +916,7 @@ Partial Class frmMain
         '
         'mnuDescribeMultivariate
         '
-        Me.mnuDescribeMultivariate.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.mnuDescribeMultivariateCorrelations, Me.mnuDescribeMultivariateprincipalComponents, Me.mnuDescribeMultivariateCanonicalCorrelations})
+        Me.mnuDescribeMultivariate.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.mnuDescribeMultivariateCorrelations, Me.mnuDescribeMultivariateprincipalComponents, Me.mnuDescribeMultivariateCanonicalCorrelations, Me.RegressionAnalysisToolStripMenuItem})
         Me.mnuDescribeMultivariate.Name = "mnuDescribeMultivariate"
         resources.ApplyResources(Me.mnuDescribeMultivariate, "mnuDescribeMultivariate")
         '
@@ -4207,6 +4208,11 @@ Partial Class frmMain
         Me.mnuLogFile.Name = "mnuLogFile"
         resources.ApplyResources(Me.mnuLogFile, "mnuLogFile")
         '
+        'RegressionAnalysisToolStripMenuItem
+        '
+        Me.RegressionAnalysisToolStripMenuItem.Name = "RegressionAnalysisToolStripMenuItem"
+        resources.ApplyResources(Me.RegressionAnalysisToolStripMenuItem, "RegressionAnalysisToolStripMenuItem")
+        '
         'frmMain
         '
         resources.ApplyResources(Me, "$this")
@@ -4878,4 +4884,5 @@ Partial Class frmMain
     Friend WithEvents mnuLastGraph As ToolStripSplitButton
     Friend WithEvents mnuViewer As ToolStripMenuItem
     Friend WithEvents mnuploty As ToolStripMenuItem
+    Friend WithEvents RegressionAnalysisToolStripMenuItem As ToolStripMenuItem
 End Class
