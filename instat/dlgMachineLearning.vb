@@ -19,31 +19,31 @@ Public Class dlgMachineLearning
     Public bFirstLoad As Boolean = True
     Private bReset As Boolean = True
     Private Sub dlgMachineLearning_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        If bfirstload Then
-            InitialiseDialog()
-            bFirstLoad = False
-        End If
-        If bReset Then
-            SetDefaults()
-        End If
-        SetRCodeForControls(bReset)
-        bReset = False
-        autoTranslate(Me)
-        TestOKEnabled()
+        'If bfirstload Then
+        '    InitialiseDialog()
+        '    bFirstLoad = False
+        'End If
+        'If bReset Then
+        '    SetDefaults()
+        'End If
+        'SetRCodeForControls(bReset)
+        'bReset = False
+        'autoTranslate(Me)
+        'TestOKEnabled()
     End Sub
 
-    Private InitialiseDialog()
+    'Private InitialiseDialog()
 
-    End Sub
-
-
-    Private SetDefaults()
-
-    End Sub
+    'End Sub
 
 
-    Private SetRCodeForControls()
+    'Private SetDefaults()
 
-    End Sub
+    'End Sub
+
+
+    'Private SetRCodeForControls()
+
+    'End Sub
 
 End Class
