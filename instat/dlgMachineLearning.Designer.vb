@@ -32,7 +32,7 @@ Partial Class dlgMachineLearning
         Me.ucrChkConvertToVariate = New instat.ucrCheck()
         Me.ucrInputModelPreview = New instat.ucrInputTextBox()
         Me.ucrReceiverResponseVar = New instat.ucrReceiverSingle()
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel = New instat.ucrSelectorByDataFrameAddRemove()
+        Me.ucrSelectorMachineLearning = New instat.ucrSelectorByDataFrameAddRemove()
         Me.ucrBase = New instat.ucrButtons()
         Me.lblType = New System.Windows.Forms.Label()
         Me.lblModel = New System.Windows.Forms.Label()
@@ -140,16 +140,16 @@ Partial Class dlgMachineLearning
         Me.ucrReceiverResponseVar.TabIndex = 20
         Me.ucrReceiverResponseVar.ucrSelector = Nothing
         '
-        'ucrSelectorByDataFrameAddRemoveForFitModel
+        'ucrSelectorMachineLearning
         '
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.bDropUnusedFilterLevels = False
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.bShowHiddenColumns = False
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.bUseCurrentFilter = True
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.Location = New System.Drawing.Point(8, 10)
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.Margin = New System.Windows.Forms.Padding(0)
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.Name = "ucrSelectorByDataFrameAddRemoveForFitModel"
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.Size = New System.Drawing.Size(215, 180)
-        Me.ucrSelectorByDataFrameAddRemoveForFitModel.TabIndex = 18
+        Me.ucrSelectorMachineLearning.bDropUnusedFilterLevels = False
+        Me.ucrSelectorMachineLearning.bShowHiddenColumns = False
+        Me.ucrSelectorMachineLearning.bUseCurrentFilter = True
+        Me.ucrSelectorMachineLearning.Location = New System.Drawing.Point(8, 10)
+        Me.ucrSelectorMachineLearning.Margin = New System.Windows.Forms.Padding(0)
+        Me.ucrSelectorMachineLearning.Name = "ucrSelectorMachineLearning"
+        Me.ucrSelectorMachineLearning.Size = New System.Drawing.Size(215, 180)
+        Me.ucrSelectorMachineLearning.TabIndex = 18
         '
         'ucrBase
         '
@@ -237,7 +237,7 @@ Partial Class dlgMachineLearning
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(510, 471)
+        Me.ClientSize = New System.Drawing.Size(498, 471)
         Me.Controls.Add(Me.grpExplanatory)
         Me.Controls.Add(Me.ucrInputModel)
         Me.Controls.Add(Me.lblModel)
@@ -252,7 +252,7 @@ Partial Class dlgMachineLearning
         Me.Controls.Add(Me.cmdModelOptions)
         Me.Controls.Add(Me.ucrReceiverResponseVar)
         Me.Controls.Add(Me.lblResponseVariable)
-        Me.Controls.Add(Me.ucrSelectorByDataFrameAddRemoveForFitModel)
+        Me.Controls.Add(Me.ucrSelectorMachineLearning)
         Me.Controls.Add(Me.ucrBase)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow
         Me.MaximizeBox = False
@@ -276,7 +276,7 @@ Partial Class dlgMachineLearning
     Friend WithEvents cmdModelOptions As Button
     Friend WithEvents ucrReceiverResponseVar As ucrReceiverSingle
     Friend WithEvents lblResponseVariable As Label
-    Friend WithEvents ucrSelectorByDataFrameAddRemoveForFitModel As ucrSelectorByDataFrameAddRemove
+    Friend WithEvents ucrSelectorMachineLearning As ucrSelectorByDataFrameAddRemove
     Friend WithEvents ucrBase As ucrButtons
     Friend WithEvents ucrInputModel As ucrInputComboBox
     Friend WithEvents lblModel As Label
