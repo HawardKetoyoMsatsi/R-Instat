@@ -16,6 +16,10 @@
 
 Public Class ucrDataFrameLength
 
+    Private Sub UcrDataFrameLength_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        SetDataFrameLength()
+    End Sub
+
     Public Overrides Sub SetDataFrameSelector(clsSelector As ucrDataFrame)
         MyBase.SetDataFrameSelector(clsSelector)
         SetDataFrameLength()
@@ -45,8 +49,7 @@ Public Class ucrDataFrameLength
         Return iLength
     End Function
 
-
-    Private Sub ucrDataFrameSelector_DataFrameChanged(sender As Object) Handles ucrDataFrameSelector.DataFrameChanged
+    Private Sub ucrDataFrameSelector_ControlValueChanged(sender As Object) Handles ucrDataFrameSelector.ControlValueChanged
         SetDataFrameLength()
     End Sub
 

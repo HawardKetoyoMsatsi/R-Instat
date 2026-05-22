@@ -19,9 +19,9 @@ Imports instat.Translations
 Public Class dlgCircularDensityPlot
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
-    Private clsDensityFunction As RFunction
-    Private clsRecordGraphFunction As RFunction
-    Private clsDensityPlotFunction, clsRosePlotFunction, clsScatterPlotFunction As RFunction
+    Private clsDensityFunction As New RFunction
+    Private clsRecordGraphFunction As New RFunction
+    Private clsDensityPlotFunction, clsRosePlotFunction, clsScatterPlotFunction As New RFunction
     Private Sub dlgCircularDensityPlot_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
             InitialiseDialog()
@@ -39,7 +39,7 @@ Public Class dlgCircularDensityPlot
     Private Sub InitialiseDialog()
         Dim dctKernel As New Dictionary(Of String, String)
         Dim dctUnits As New Dictionary(Of String, String)
-
+        ucrBase.iHelpTopicID = 181
         ucrBase.clsRsyntax.iCallType = 3
         ucrBase.clsRsyntax.bExcludeAssignedFunctionOutput = False
 
@@ -103,7 +103,7 @@ Public Class dlgCircularDensityPlot
         ucrSaveDensity.SetPrefix("circular_density")
         ucrSaveDensity.SetDataFrameSelector(ucrSelectorDataFrame.ucrAvailableDataFrames)
         ucrSaveDensity.SetIsComboBox()
-        ucrSaveDensity.SetCheckBoxText("Save Graph")
+        ucrSaveDensity.SetCheckBoxText("Store Graph")
         ucrSaveDensity.SetSaveTypeAsGraph()
         ucrSaveDensity.SetAssignToIfUncheckedValue("last_graph")
 
@@ -150,6 +150,7 @@ Public Class dlgCircularDensityPlot
         clsScatterPlotFunction.AddParameter("sep", 0.0003, iPosition:=5)
         clsScatterPlotFunction.AddParameter("shrink", 1, iPosition:=9)
 
+        clsRecordGraphFunction.SetPackageName("instatExtras")
         clsRecordGraphFunction.SetRCommand("record_graph")
         clsRecordGraphFunction.AddParameter("x", clsRFunctionParameter:=clsDensityPlotFunction, iPosition:=0)
 

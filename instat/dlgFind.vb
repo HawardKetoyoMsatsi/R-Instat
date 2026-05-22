@@ -25,14 +25,8 @@ Public Class dlgFind
     Private Sub cmdFindNext_Click(sender As Object, e As EventArgs) Handles cmdFindNext.Click
 
         Select Case currWindow.Name
-            Case "frmLog"
-                searchTextBox(frmLog.txtLog, targetPos)
-
             Case "frmCommand"
                 searchTextBox(frmCommand.txtCommand, targetPos)
-
-            Case "frmScript"
-                searchTextBox(frmScript.txtScript, targetPos)
 
             Case "frmEditor"
                 searchDataView(targetPos)
@@ -61,7 +55,7 @@ Public Class dlgFind
         Dim s As String = tmpTxtBox.Text
         Dim j As Integer = s.IndexOf(txtFindWhat.Text, targetPos)
         If j < 0 Then
-            MsgBox("Not found")
+            MsgBoxTranslate("Not found")
             txtFindWhat.Focus()
         Else
             tmpTxtBox.Focus()
@@ -90,7 +84,7 @@ Public Class dlgFind
         If startIndex < addressList.Count Then
             currSheet.StartEdit(addressList.Item(startIndex).Item1, addressList.Item(startIndex).Item2)
         Else
-            MsgBox("End of search")
+            MsgBoxTranslate("End of search")
         End If
 
         targetPos = startIndex + 1
@@ -106,7 +100,7 @@ Public Class dlgFind
             cmdFindNext.Enabled = True
             Me.AcceptButton = cmdFindNext
             cmdFindAll.Enabled = False
-        ElseIf currWindow.Name = "frmCommand" Or currWindow.Name = "frmLog" Or currWindow.Name = "frmScript" Then
+        ElseIf currWindow.Name = "frmCommand" Then
             cmdFindNext.Enabled = True
             Me.AcceptButton = cmdFindNext
             cmdFindAll.Enabled = False

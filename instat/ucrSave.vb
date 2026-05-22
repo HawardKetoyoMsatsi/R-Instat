@@ -13,6 +13,7 @@
 '
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
+Imports System.ComponentModel
 Imports instat
 Imports instat.Translations
 
@@ -34,7 +35,19 @@ Public Class ucrSave
     'TODO SJL 06/07/20 If you refactor this class then please see the suggestions from @Patowhiz in PR #5794
     ' 
 
+    ''' <summary>
+    ''' Specifies the type of information required when calling <see cref="GetText([Enum])"/>.
+    ''' </summary>
+    Public Enum SaveLocation
+        adjacentColumn
+        before
+        columnName
+        isChecked
+        saveName
+    End Enum
+
     ''' <summary>   True if the control has not yet loaded. </summary>
+
     Public bFirstLoad As Boolean = True
 
     ''' <summary>   True to show, false to hide the check box. <para>
@@ -50,6 +63,10 @@ Public Class ucrSave
     '''             For example, radio buttons may require the control to switch between different 
     '''             states.</para>
     '''             </summary>
+    '''             
+    Private strDataNameAsRVariable As String = ""
+    ''' <summary> If set, this R variable name is used for data_name instead of 
+    '''           the dataframe selector text. </summary>
     Private bShowCheckBox As Boolean = True
     ''' <summary>   True to show, false to hide the label. </summary>
     '''             (mutually exclusive with bShowCheckBox, see note above) 
@@ -57,13 +74,15 @@ Public Class ucrSave
     ''' <summary>   Type of object saved by this control 
     '''             (valid values are: 'column', 'dataframe', 'graph', model', 'surv', 'table') 
     '''             </summary>
-    Private strSaveType As String = "column"
+    Private _strRObjectLabel As String = "column"
+    Private _strRObjectFormat As String
+
     ''' <summary>   Prefix used for the default name displayed in the text/combo box </summary>
     Private strPrefix As String
     ''' <summary>   True if this control has a combo box rather than a text box.<para>
     '''             Note: This control can have either a combo box or a text box but cannot have 
     '''             both. </para><para>
-    '''             A text box is normally used when pre-defined names aren’t of any interest to 
+    '''             A text box is normally used when pre-defined names aren't of any interest to 
     '''             the user. </para><para>
     '''             A combo box is normally used when the user needs to see previously defined 
     '''             names (e.g. existing column names). The user may then deliberately save to an 
@@ -146,9 +165,9 @@ Public Class ucrSave
     ''' <summary>   Initialises the control. 
     '''             <para>
     '''             Sets flags to show that check box and the text/combo box can be set from the 
-    '''             control’s R code.
-    '''             Also sets flags to show that the control’s R code should be updated whenever the 
-    '''             control’s value changes.</para>
+    '''             control's R code.
+    '''             Also sets flags to show that the control's R code should be updated whenever the 
+    '''             control's value changes.</para>
     ''' </summary>
     '''--------------------------------------------------------------------------------------------
     Private Sub InitialiseControl()
@@ -168,7 +187,7 @@ Public Class ucrSave
     Private Sub SetDefaults()
         ucrInputTextSave.Reset()
         ucrInputComboSave.Reset()
-        SetSaveType(strSaveType)
+        SetSaveType(Me._strRObjectLabel, Me._strRObjectFormat)
         LabelOrCheckboxSettings()
         UpdateRCode()
     End Sub
@@ -250,6 +269,20 @@ Public Class ucrSave
             ucrInputTextSave.Visible = True
         End If
     End Sub
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary> Sets an R variable name to use for data_name instead of the dataframe 
+    '''           selector text.
+    '''           e.g. pass "linked_data_name" to produce data_name=linked_data_name (no quotes)
+    '''           Pass "" to revert to using the dataframe selector text (default behaviour)
+    ''' </summary>
+    ''' <param name="strRVariableName"> The R variable name to use for data_name </param>
+    '''--------------------------------------------------------------------------------------------
+    Public Sub SetDataNameAsRVariable(strRVariableName As String)
+        strDataNameAsRVariable = strRVariableName
+        UpdateAssignTo()
+    End Sub
+
     '''--------------------------------------------------------------------------------------------
     ''' <summary>   Sets the prefix for the text/combo box value to
     '''             <paramref name="strNewPrefix"/>. If <paramref name="strNewPrefix"/> is not an
@@ -369,7 +402,7 @@ Public Class ucrSave
         End If
     End Sub
     '''--------------------------------------------------------------------------------------------
-    ''' <summary>   Sets save type to <paramref name="strType"/>. Valid values are: 
+    ''' <summary>   Sets save type to <paramref name="strRObjectType"/>. Valid values are: 
     '''             "column", "dataframe", "graph", "model", "surv" or "table".
     '''             Sets the combobox and textbox to be the same type.
     '''             If type is "column" then makes the 'position' button visible, else makes it not
@@ -379,42 +412,33 @@ Public Class ucrSave
     '''             be placed at the start end, or before/after an adjacent object.)
     '''             </summary>
     '''
-    ''' <param name="strType">  The type of object saved by this control. Valid values are: 
+    ''' <param name="strRObjectType">  The type of object saved by this control. Valid values are: 
     '''                         "column", "dataframe", "graph", "model", "surv" or "table". 
     '''                         An invalid value throws a developer error.</param>
     '''--------------------------------------------------------------------------------------------
-    Private Sub SetSaveType(strType As String)
-        strSaveType = strType
-        Select Case strSaveType
-            Case "column"
+    Public Sub SetSaveType(strRObjectType As String, Optional strRObjectFormat As String = "")
+        Me._strRObjectLabel = strRObjectType
+        Me._strRObjectFormat = strRObjectFormat
+        Select Case Me._strRObjectLabel
+            Case RObjectTypeLabel.Column
                 ucrInputComboSave.SetDefaultTypeAsColumn()
                 ucrInputComboSave.SetItemsTypeAsColumns()
                 ucrInputTextSave.SetDefaultTypeAsColumn()
                 btnColumnPosition.Visible = True
-            Case "dataframe"
+            Case RObjectTypeLabel.Dataframe
                 ucrInputComboSave.SetDefaultTypeAsDataFrame()
                 ucrInputComboSave.SetItemsTypeAsDataFrames()
                 ucrInputTextSave.SetDefaultTypeAsDataFrame()
                 btnColumnPosition.Visible = False
-            Case "graph"
-                ucrInputComboSave.SetDefaultTypeAsGraph()
-                ucrInputComboSave.SetItemsTypeAsGraphs()
-                ucrInputTextSave.SetDefaultTypeAsGraph()
-                btnColumnPosition.Visible = False
-            Case "model"
-                ucrInputComboSave.SetDefaultTypeAsModel()
-                ucrInputComboSave.SetItemsTypeAsModels()
-                ucrInputTextSave.SetDefaultTypeAsModel()
-                btnColumnPosition.Visible = False
-            Case "surv"
-                ucrInputComboSave.SetDefaultTypeAsSurv()
-                ucrInputComboSave.SetItemsTypeAsSurv()
-                ucrInputTextSave.SetDefaultTypeAsSurv()
-                btnColumnPosition.Visible = False
-            Case "table"
-                ucrInputComboSave.SetDefaultTypeAsTable()
-                ucrInputComboSave.SetItemsTypeAsTables()
-                ucrInputTextSave.SetDefaultTypeAsTable()
+            Case RObjectTypeLabel.Graph,
+                 RObjectTypeLabel.Table,
+                 RObjectTypeLabel.Model,
+                 RObjectTypeLabel.StructureLabel,
+                 RObjectTypeLabel.Summary
+                'for objects that are shown in the output viewer. do the following
+                ucrInputComboSave.SetDefaultRObjectTypeLabel(_strRObjectLabel)
+                ucrInputComboSave.SetRObjectItemsTypeLabel(_strRObjectLabel)
+                ucrInputTextSave.SetDefaultRObjectTypeLabel(_strRObjectLabel)
                 btnColumnPosition.Visible = False
             Case "key"
                 ucrInputComboSave.SetDefaultTypeAsKey()
@@ -427,7 +451,7 @@ Public Class ucrSave
                 ucrInputTextSave.SetDefaultTypeAsLink()
                 btnColumnPosition.Visible = False
             Case Else
-                MsgBox("Developer error: unrecognised save type: " & strType)
+                MsgBoxTranslate("Developer error: unrecognised save type: " & strRObjectType)
         End Select
     End Sub
     ''' <summary>   Sets save type as column. </summary>
@@ -438,21 +462,36 @@ Public Class ucrSave
     Public Sub SetSaveTypeAsDataFrame()
         SetSaveType("dataframe")
     End Sub
-    ''' <summary>   Sets save type as graph. </summary>
+    ''' <summary>   
+    ''' Sets save type as graph. 
+    ''' todo. deprecate
+    ''' </summary>
     Public Sub SetSaveTypeAsGraph()
-        SetSaveType("graph")
+        'assumption is by default a model is in image format
+        SetSaveType(strRObjectType:=RObjectTypeLabel.Graph, strRObjectFormat:=RObjectFormat.Image)
     End Sub
-    ''' <summary>   Sets save type as model. </summary>
+    ''' <summary>   
+    ''' Sets save type as model. 
+    ''' todo. deprecate
+    ''' </summary>
     Public Sub SetSaveTypeAsModel()
-        SetSaveType("model")
+        'assumption is by default a model is in text format
+        SetSaveType(strRObjectType:=RObjectTypeLabel.Model, strRObjectFormat:=RObjectFormat.Text)
     End Sub
-    ''' <summary>   Sets save type as surv. </summary>
+    ''' <summary>   
+    ''' Sets save type as surv. 
+    ''' todo. deprecate
+    ''' </summary>
     Public Sub SetSaveTypeAsSurv()
-        SetSaveType("surv")
+        'assumption is by default a survival is in text format
+        SetSaveType(strRObjectType:=RObjectTypeLabel.StructureLabel, strRObjectFormat:=RObjectFormat.Text)
     End Sub
-    ''' <summary>   Sets save type as table. </summary>
+    ''' <summary>   
+    ''' Sets save type as table. 
+    ''' todo. deprecate </summary>
     Public Sub SetSaveTypeAsTable()
-        SetSaveType("table")
+        'assumption is by default a table is in text format
+        SetSaveType(strRObjectType:=RObjectTypeLabel.Table, strRObjectFormat:=RObjectFormat.Text)
     End Sub
     ''' <summary>   Sets save type as key. </summary>
     Public Sub SetSaveTypeAsKey()
@@ -510,7 +549,7 @@ Public Class ucrSave
         btnColumnPosition.Visible = False
 
         'always hide position button if save type is not a column
-        If strSaveType = "column" Then
+        If _strRObjectLabel = "column" Then
             btnColumnPosition.Visible = ucrChkSave.Checked
         End If
 
@@ -563,7 +602,7 @@ Public Class ucrSave
     '''                         position variables. </param>
     '''--------------------------------------------------------------------------------------------
     Public Overrides Sub UpdateRCode(Optional bReset As Boolean = False)
-        If strSaveType = "key" OrElse strSaveType = "link" Then
+        If _strRObjectLabel = "key" OrElse _strRObjectLabel = "link" Then
             MyBase.UpdateRCode(bReset)
         Else
             UpdateAssignTo()
@@ -576,12 +615,12 @@ Public Class ucrSave
     '''             </summary>
     '''--------------------------------------------------------------------------------------------
     Protected Overrides Sub UpdateAllParameters()
-        If strSaveType = "key" OrElse strSaveType = "link" Then
+        If _strRObjectLabel = "key" OrElse _strRObjectLabel = "link" Then
             MyBase.UpdateAllParameters()
         Else
             UpdateAssignTo()
         End If
-        ' TODO SJL 16/06/20 Name ‘UpdateAllParameters’ is misleading, parent function does what the name says, this function doesn’t. Ask Danny's advice?
+        ' TODO SJL 16/06/20 Name 'UpdateAllParameters' is misleading, parent function does what the name says, this function doesn't. Ask Danny's advice?
     End Sub
 
     Public Overrides Sub UpdateParameter(clsTempParam As RParameter)
@@ -626,19 +665,20 @@ Public Class ucrSave
                 If bRemove Then
                     clsTempCode.RemoveAssignTo()
                 Else
-                    If ucrDataFrameSelector IsNot Nothing Then
-                        strDataName = ucrDataFrameSelector.cboAvailableDataFrames.Text
+                    Dim bDataNameIsRVariable As Boolean = False
+                    If Not String.IsNullOrEmpty(strDataNameAsRVariable) Then
+                        strDataName = strDataNameAsRVariable
+                        bDataNameIsRVariable = True
                     Else
-                        strDataName = strGlobalDataName
+                        strDataName = If(ucrDataFrameSelector IsNot Nothing,
+                     ucrDataFrameSelector.cboAvailableDataFrames.Text,
+                     strGlobalDataName)
+                        bDataNameIsRVariable = False
                     End If
-                    If bShowCheckBox AndAlso Not ucrChkSave.Checked Then
-                        strSaveName = strAssignToIfUnchecked
-                    Else
-                        strSaveName = GetText()
-                    End If
+                    strSaveName = If(bShowCheckBox AndAlso Not ucrChkSave.Checked, strAssignToIfUnchecked, GetText())
                     If strSaveName <> "" Then
-                        Select Case strSaveType
-                            Case "column"
+                        Select Case _strRObjectLabel
+                            Case RObjectTypeLabel.Column
                                 'todo 25/03/2021. because of this new functionailty added. Should we rename this function from UpdateAssignTo() to something else
                                 If bSetPositionParamsDirectly Then
                                     clsTempCode.SetAssignTo(strTemp:=strSaveName, strTempDataframe:=strDataName, strTempColumn:=strSaveName, bAssignToIsPrefix:=bAssignToIsPrefix, bAssignToColumnWithoutNames:=bAssignToColumnWithoutNames, bInsertColumnBefore:=bInsertColumnBefore, strAdjacentColumn:=strAdjacentColumn)
@@ -650,16 +690,28 @@ Public Class ucrSave
                                         clsTempCode.AddParameter(strParameterName:="adjacent_column", strParameterValue:=strAdjacentColumn)
                                     End If
                                 End If
-                            Case "dataframe"
+                            Case RObjectTypeLabel.Dataframe
                                 clsTempCode.SetAssignTo(strTemp:=strSaveName, strTempDataframe:=strSaveName, bAssignToIsPrefix:=bAssignToIsPrefix, bDataFrameList:=bDataFrameList, strDataFrameNames:=strDataFrameNames)
-                            Case "graph"
-                                clsTempCode.SetAssignTo(strTemp:=strSaveName, strTempDataframe:=strDataName, strTempGraph:=strSaveName, bAssignToIsPrefix:=bAssignToIsPrefix)
-                            Case "model"
-                                clsTempCode.SetAssignTo(strTemp:=strSaveName, strTempDataframe:=strDataName, strTempModel:=strSaveName, bAssignToIsPrefix:=bAssignToIsPrefix)
-                            Case "table"
-                                clsTempCode.SetAssignTo(strTemp:=strSaveName, strTempDataframe:=strDataName, strTempTable:=strSaveName, bAssignToIsPrefix:=bAssignToIsPrefix)
-                            Case "surv"
-                                clsTempCode.SetAssignTo(strTemp:=strSaveName, strTempDataframe:=strDataName, strTempSurv:=strSaveName, bAssignToIsPrefix:=bAssignToIsPrefix)
+                            Case RObjectTypeLabel.Graph,
+                                 RObjectTypeLabel.Summary,
+                                 RObjectTypeLabel.Table,
+                                 RObjectTypeLabel.Model,
+                                 RObjectTypeLabel.StructureLabel
+                                If (_strRObjectLabel = RObjectTypeLabel.Table OrElse _strRObjectLabel = RObjectTypeLabel.Model) AndAlso
+                                    String.IsNullOrEmpty(_strRObjectFormat) Then
+                                    'todo. temporary check until all table and model dialogs are modified to set _strRObjectFormat  
+                                    clsTempCode.SetAssignTo(strTemp:=strSaveName,
+                                                            strTempDataframe:=strDataName,
+                                                            strTempTable:=strSaveName,
+                                                            bAssignToIsPrefix:=bAssignToIsPrefix)
+                                Else
+                                    clsTempCode.SetAssignToOutputObject(strRObjectToAssignTo:=strSaveName,
+                                                                        strRObjectTypeLabelToAssignTo:=_strRObjectLabel,
+                                                                        strRObjectFormatToAssignTo:=_strRObjectFormat,
+                                                                        strRDataFrameNameToAddObjectTo:=strDataName,
+                                                                        strObjectName:=strSaveName,
+                                                                        bDataFrameNameIsRVariable:=bDataNameIsRVariable)
+                                End If
                         End Select
                     Else
                         clsTempCode.RemoveAssignTo()
@@ -696,15 +748,13 @@ Public Class ucrSave
     '''                                 overridden function. </param>
     '''--------------------------------------------------------------------------------------------
     Public Overrides Sub UpdateControl(Optional bReset As Boolean = False, Optional bCloneIfNeeded As Boolean = False)
-        If Not strSaveType = "key" AndAlso Not strSaveType = "link" Then
+        If Not _strRObjectLabel = "key" AndAlso Not _strRObjectLabel = "link" Then
             Dim clsMainRCode As RCodeStructure = GetRCode()
             Dim strControlValue As String = ""
 
             If clsMainRCode IsNot Nothing Then
                 If String.IsNullOrEmpty(strReadNameFromParameterName) Then
-                    If clsMainRCode.bToBeAssigned OrElse clsMainRCode.bIsAssigned Then
-                        strControlValue = If(clsMainRCode.strAssignTo IsNot Nothing, clsMainRCode.strAssignTo, "")
-                    End If
+                    strControlValue = If(clsMainRCode.GetRObjectToAssignTo IsNot Nothing, clsMainRCode.GetRObjectToAssignTo, "")
                 Else
                     If clsMainRCode.GetParameter(strReadNameFromParameterName) IsNot Nothing Then
                         strControlValue = clsMainRCode.GetParameter(strReadNameFromParameterName).strArgumentValue
@@ -724,7 +774,7 @@ Public Class ucrSave
                     If GetText() = strAssignToIfUnchecked Then
                         ucrChkSave.Checked = False
                     Else
-                        ucrChkSave.Checked = (clsMainRCode.bToBeAssigned OrElse clsMainRCode.bIsAssigned)
+                        ucrChkSave.Checked = Not String.IsNullOrEmpty(clsMainRCode.GetRObjectToAssignTo())
                     End If
                 End If
 
@@ -754,16 +804,57 @@ Public Class ucrSave
         End If
     End Function
     '''--------------------------------------------------------------------------------------------
-    ''' <summary>   Gets the text from the text/combo box. </summary>
-    '''
-    ''' <returns>   The text from the text/combo box. </returns>
+    ''' <summary>
+    '''  Returns information about the save control's current selection as specified by 
+    '''  <paramref name="enumTextType"/>.
+    '''  If <paramref name="enumTextType"/> is not specified, returns the column name.
+    '''  If <paramref name="enumTextType"/> is invalid, then throws an exception.
+    ''' </summary>
+    ''' <param name="enumTextType"></param>
+    ''' <returns>Information about the save control's current selection as specified by 
+    '''     <paramref name="enumTextType"/></returns>
     '''--------------------------------------------------------------------------------------------
-    Public Function GetText() As String
-        If bIsComboBox Then
-            Return ucrInputComboSave.GetText()
-        Else
-            Return ucrInputTextSave.GetText()
+    Public Overrides Function GetText(Optional enumTextType As [Enum] = Nothing) As String
+        If enumTextType Is Nothing Then
+            enumTextType = SaveLocation.columnName
         End If
+
+        Dim enumSaveParameter As SaveLocation
+        Try
+            enumSaveParameter = DirectCast(enumTextType, SaveLocation)
+        Catch ex As InvalidCastException
+            Throw New InvalidCastException("Invalid value for SaveLocation")
+        End Try
+
+        Select Case enumSaveParameter
+            Case SaveLocation.adjacentColumn
+                Return strAdjacentColumn
+            Case SaveLocation.before
+                Return If(bInsertColumnBefore, "TRUE", "FALSE")
+            Case SaveLocation.columnName
+                If bIsComboBox Then
+                    Return ucrInputComboSave.GetText()
+                Else
+                    Return ucrInputTextSave.GetText()
+                End If
+            Case SaveLocation.isChecked
+                Return ucrChkSave.GetText()
+            Case SaveLocation.saveName
+                Return ucrInputComboSave.GetText()
+        End Select
+
+        Throw New InvalidEnumArgumentException("Invalid save parameter type")
+    End Function
+
+    '''--------------------------------------------------------------------------------------------
+    ''' <summary>   Gets the adjacent column name from the Save Column Position Sub Dialogue. 
+    ''' todo @lloyddewit 15/05/24 : should this function return `strAdjacentColumn`?
+    '''      This function is also unused. Remove this function?</summary>
+    '''
+    ''' <returns>   The adjacent column name from the Save Column Position Sub Dialogue. </returns>
+    '''--------------------------------------------------------------------------------------------
+    Public Function AdjacentColumnName() As String
+        Return sdgSaveColumnPosition.AdjacentColumn
     End Function
     '''--------------------------------------------------------------------------------------------
     ''' <summary>   True if the user has entered text into the text/combo box, else false. </summary>
@@ -806,15 +897,16 @@ Public Class ucrSave
     ''' <returns>   If the type of object to save is specified (e.g. column), the R code's output 
     '''             hasn't been assigned, and doesn't need to be assigned, then returns true. </returns>
     '''--------------------------------------------------------------------------------------------
-    Protected Overrides Function CanUpdate() As Object
+    Protected Overrides Function CanUpdate() As Boolean
         'TODO SJL 15/05/20 
         '    - Should this function return boolean? The parent function in ucrCore has no return type! Is this good coding practice?
         '    - The parent function returns true if the control has a paremter that is not yet included in the R command. Why is this control different?
         '    - Is the condition for bToBeAssigned correct?
-        If strSaveType = "key" OrElse strSaveType = "link" Then
+        If _strRObjectLabel = "key" OrElse _strRObjectLabel = "link" Then
             Return MyBase.CanUpdate()
         Else
-            Return ((Not GetRCode().bIsAssigned AndAlso Not GetRCode().bToBeAssigned) AndAlso strSaveType <> "")
+            'Return ((Not GetRCode().bIsAssigned AndAlso Not GetRCode().bToBeAssigned) AndAlso _strRObjectLabel <> "")
+            Return (String.IsNullOrEmpty(GetRCode().GetRObjectToAssignTo()) AndAlso _strRObjectLabel <> "")
         End If
     End Function
     '''--------------------------------------------------------------------------------------------
@@ -835,7 +927,7 @@ Public Class ucrSave
         'TODO SJL 15/05/20 
         '   - The name is quite confusing. Rename?
         '   - If we made 'UpdateAssignTo' public then we could remove this function
-        If strSaveType = "key" OrElse strSaveType = "link" Then
+        If _strRObjectLabel = "key" OrElse _strRObjectLabel = "link" Then
             MyBase.AddOrRemoveParameter(True)
         Else
             UpdateAssignTo(Not bAdd)
@@ -927,7 +1019,8 @@ Public Class ucrSave
         Dim strDataName As String = If(ucrDataFrameSelector IsNot Nothing, ucrDataFrameSelector.cboAvailableDataFrames.Text, strGlobalDataName)
 
         sdgSaveColumnPosition.SetUp(strDataName, bInsertColumnBefore, strAdjacentColumn, bKeepExistingPosition)
-        sdgSaveColumnPosition.ShowDialog()
+        ' Pass the parent form as owner so sdgSaveColumnPosition.Owner is set and the sub-dialog can find the parent controls:
+        sdgSaveColumnPosition.ShowDialog(Me.FindForm())
 
         bInsertColumnBefore = sdgSaveColumnPosition.InsertColumnBefore
         strAdjacentColumn = sdgSaveColumnPosition.AdjacentColumn

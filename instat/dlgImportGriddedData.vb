@@ -19,7 +19,7 @@ Public Class dlgImportGriddedData
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
     Private bShowMessageBox As Boolean
-    Private clsDownloadFromIRIFunction As RFunction
+    Private clsDownloadFromIRIFunction As New RFunction
     Private dctDownloadPairs, dctFiles As New Dictionary(Of String, String)
     Private Sub dlgImportGriddedData_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
@@ -211,7 +211,7 @@ Public Class dlgImportGriddedData
 
     Private Sub ucrDtpMaxDate_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrDtpMaxDate.ControlValueChanged, ucrDtpMinDate.ControlValueChanged
         If ucrDtpMinDate.DateValue > ucrDtpMaxDate.DateValue AndAlso bShowMessageBox Then
-            MsgBox("From date is greater than To date. Ok will Not be enabled on the dialog.", Title:="Date bounds", Buttons:=MsgBoxStyle.Information)
+            MsgBoxTranslate("From date is greater than To date. Ok will Not be enabled on the dialog.", Title:="Date bounds", Buttons:=MsgBoxStyle.Information)
             bShowMessageBox = False
         End If
     End Sub

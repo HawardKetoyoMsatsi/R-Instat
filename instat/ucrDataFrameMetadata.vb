@@ -24,12 +24,25 @@ Public Class ucrDataFrameMetadata
     Private _grid As IDataframeMetaDataGrid
     Dim _strNameLabel As String = "data_name"
 
-    '  Public WithEvents grdCurrSheet As unvell.ReoGrid.Worksheet
-    Public strPreviousCellText As String
+    '  Public WithEvents grdCurrSheet As unvell.ReoGrid.Worksheets
     Private lstNonEditableColumns As New List(Of String)
     Private clsHideDataFrame As New RFunction
     Private clsViewDataFrame As New RFunction
     Private clsGetDataFrame As New RFunction
+
+    Public Sub New()
+        ' This call is required by the designer.
+        InitializeComponent()
+
+        ' Add any initialization after the InitializeComponent() call.
+        SetupInitialLayoutAndGrid()
+    End Sub
+    Private Sub ucrDataFrameMetadata_Load(sender As Object, e As EventArgs) Handles Me.Load
+        clsViewDataFrame.SetRCommand("View")
+        clsGetDataFrame.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_data_frame")
+        clsHideDataFrame.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$append_to_dataframe_metadata")
+    End Sub
+
 
     Public WriteOnly Property DataBook() As clsDataBook
         Set(ByVal value As clsDataBook)
@@ -38,14 +51,7 @@ Public Class ucrDataFrameMetadata
         End Set
     End Property
 
-    Private Sub frmMetaData_Load(sender As Object, e As EventArgs) Handles Me.Load
-        LoadForm()
-        clsViewDataFrame.SetRCommand("View")
-        clsGetDataFrame.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_data_frame")
-        clsHideDataFrame.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$append_to_dataframe_metadata")
-    End Sub
-
-    Private Sub LoadForm()
+    Private Sub SetupInitialLayoutAndGrid()
         lstNonEditableColumns.AddRange({"class", "Is_Hidden", "Row_Count", "Column_Count", "Is_Linkable", "Is_Calculated"})
 
         'Debug
@@ -83,9 +89,9 @@ Public Class ucrDataFrameMetadata
         If _clsDataBook Is Nothing Or _clsDataBook.DataFrames.Count = 0 Then
             Exit Sub
         End If
+        _grid.UpdateAllWorksheetStyles()
         _grid.AddColumns()
         _grid.AddRowData()
-        _grid.UpdateAllWorksheetStyles()
     End Sub
 
     Public Sub RefreshGridData()
@@ -109,7 +115,7 @@ Public Class ucrDataFrameMetadata
 
         StrDataframeName = _grid.GetCellValue(iRow, _strNameLabel)
         If StrDataframeName = "" Then
-            MsgBox("Developer error: Cannot find Name column in column metadata grid.", MsgBoxStyle.Critical, "Cannot find Name column")
+            MsgBoxTranslate("Developer error: Cannot find Name column in column metadata grid.", MsgBoxStyle.Critical, "Cannot find Name column")
             Exit Sub
         End If
         If Decimal.TryParse(newValue, iTemp) Then
@@ -121,15 +127,14 @@ Public Class ucrDataFrameMetadata
         If strColumnName = _strNameLabel Then
             If frmMain.clsRLink.IsValidText(newValue) Then
                 If frmMain.clsRLink.GetDataFrameNames().Contains(newValue.ToString()) Then
-                    MsgBox(newValue.ToString() & " is an existing data frame name.", MsgBoxStyle.Information, "Invalid Data Frame Name")
+                    MsgBoxTranslate(newValue.ToString() & " is an existing data frame name.", MsgBoxStyle.Information, "Invalid Data Frame Name")
                     Exit Sub
                 Else
-                    strScript = frmMain.clsRLink.strInstatDataObject & "$rename_dataframe(data_name =" & Chr(34) & strPreviousCellText & Chr(34) &
-                                    ", new_val = " & strNewValue & ")"
+                    strScript = frmMain.clsRLink.strInstatDataObject & "$rename_dataframe(data_name =" & Chr(34) & strPreviousValue & Chr(34) & ", new_val = " & strNewValue & ")"
                     strComment = "Renamed data frame"
                 End If
             Else
-                MsgBox(newValue & " is not a valid data frame name.", MsgBoxStyle.Information, "Invalid Data Frame Name")
+                MsgBoxTranslate(newValue & " is not a valid data frame name.", MsgBoxStyle.Information, "Invalid Data Frame Name")
                 Exit Sub
             End If
         Else
@@ -162,7 +167,7 @@ Public Class ucrDataFrameMetadata
     End Sub
 
     Private Sub mnuHelp_Click(sender As Object, e As EventArgs) Handles mnuHelp.Click
-        Help.ShowHelp(Me, frmMain.strStaticPath & "\" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "544")
+        Help.ShowHelp(Me, frmMain.strStaticPath & "\" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "134")
     End Sub
 
     Private Function GetSelectedDataframeNameFromSelectedRow() As String
@@ -195,16 +200,6 @@ Public Class ucrDataFrameMetadata
         dlgCopyDataFrame.ShowDialog()
     End Sub
 
-    Private Sub viewSheet_Click(sender As Object, e As EventArgs) Handles viewSheet.Click
-        Dim strScript As String = ""
-        Dim strTemp As String
-        clsGetDataFrame.AddParameter("data_name", Chr(34) & GetSelectedDataframeNameFromSelectedRow() & Chr(34), iPosition:=0)
-        clsViewDataFrame.AddParameter("x", clsRFunctionParameter:=clsGetDataFrame, iPosition:=0)
-        clsGetDataFrame.SetAssignTo(GetSelectedDataframeNameFromSelectedRow)
-        strTemp = clsViewDataFrame.ToScript(strScript)
-        RunScriptFromDataFrameMetadata(strScript & strTemp, strComment:="Right click menu: View R Data Frame", bSeparateThread:=False)
-    End Sub
-
     Private Sub reorderSheet_Click(sender As Object, e As EventArgs) Handles reorderSheet.Click
         dlgReorderDataFrame.ShowDialog()
     End Sub
@@ -216,5 +211,9 @@ Public Class ucrDataFrameMetadata
     Private Sub mnuAddComment_Click(sender As Object, e As EventArgs) Handles mnuAddComment.Click
         dlgAddComment.SetPosition(strDataFrame:=_grid.CurrentWorksheet.Name)
         dlgAddComment.ShowDialog()
+    End Sub
+
+    Private Sub HelpToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles HelpToolStripMenuItem.Click
+        Help.ShowHelp(Me, frmMain.strStaticPath & "\" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "697")
     End Sub
 End Class

@@ -11,11 +11,12 @@
 ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ' GNU General Public License for more details.
 '
-' You should have received a copy of the GNU General Public License 
+' You should have received a copy of the GNU General Public License
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Imports instat
 Imports RDotNet
+Imports instat.Translations
 
 Public Class ucrInput
     Public bUserTyped As Boolean = False
@@ -26,7 +27,7 @@ Public Class ucrInput
     Protected dcmMinimum As Decimal = Decimal.MinValue
     Protected dcmMaximum As Decimal = Decimal.MaxValue
     Protected bMinimumIncluded, bMaximumIncluded As Boolean
-    Protected strDefaultType As String = ""
+    Protected _strDefaultRObjectTypeLabel As String = ""
     Protected strDefaultPrefix As String = ""
     Protected WithEvents ucrDataFrameSelector As ucrDataFrame
     Protected bIsReadOnly As Boolean = False
@@ -53,7 +54,7 @@ Public Class ucrInput
         bLastSilent = bSilent
     End Sub
 
-    Public Overridable Function GetText() As String
+    Public Overrides Function GetText(Optional enumTextType As [Enum] = Nothing) As String
         Return ""
     End Function
 
@@ -89,43 +90,28 @@ Public Class ucrInput
         Return bUserTyped
     End Function
 
+    Public Sub SetDefaultRObjectTypeLabel(strRObjectTypeLabel As String)
+        Me._strDefaultRObjectTypeLabel = strRObjectTypeLabel
+        SetDefaultName()
+    End Sub
+
     Public Sub SetDefaultTypeAsColumn()
-        strDefaultType = "Column"
-        SetDefaultName()
-    End Sub
-
-    Public Sub SetDefaultTypeAsModel()
-        strDefaultType = "Model"
-        SetDefaultName()
-    End Sub
-
-    Public Sub SetDefaultTypeAsSurv()
-        strDefaultType = "Surv"
-        SetDefaultName()
-    End Sub
-
-    Public Sub SetDefaultTypeAsTable()
-        strDefaultType = "Table"
+        _strDefaultRObjectTypeLabel = "Column"
         SetDefaultName()
     End Sub
 
     Public Sub SetDefaultTypeAsDataFrame()
-        strDefaultType = "Data Frame"
-        SetDefaultName()
-    End Sub
-
-    Public Sub SetDefaultTypeAsGraph()
-        strDefaultType = "Graph"
+        _strDefaultRObjectTypeLabel = "Data Frame"
         SetDefaultName()
     End Sub
 
     Public Sub SetDefaultTypeAsKey()
-        strDefaultType = "Key"
+        _strDefaultRObjectTypeLabel = "Key"
         SetDefaultName()
     End Sub
 
     Public Sub SetDefaultTypeAsLink()
-        strDefaultType = "Link"
+        _strDefaultRObjectTypeLabel = "Link"
         SetDefaultName()
     End Sub
 
@@ -135,12 +121,12 @@ Public Class ucrInput
     End Sub
 
     Public Sub SetDefaultTypeAsFilter()
-        strDefaultType = "Filter"
+        _strDefaultRObjectTypeLabel = "Filter"
         SetDefaultName()
     End Sub
 
     Public Sub SetDefaultTypeAsColumnSelection()
-        strDefaultType = "Column Selection"
+        _strDefaultRObjectTypeLabel = "Column Selection"
 
         SetDefaultName()
     End Sub
@@ -159,67 +145,53 @@ Public Class ucrInput
 
     Public Sub SetDefaultName()
         If strDefaultPrefix <> "" Then
-            If strDefaultType = "Column" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" AndAlso frmMain.clsRLink.DataFrameExists(ucrDataFrameSelector.cboAvailableDataFrames.Text) Then
-                    SetName(frmMain.clsRLink.GetDefaultColumnNames(strDefaultPrefix, ucrDataFrameSelector.cboAvailableDataFrames.Text))
-                Else
-                    SetName("")
-                End If
-            ElseIf strDefaultType = "Model" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetModelNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    'temp disabled as causing bug and not currently needed
-                    'SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetModelNames()))
-                End If
-            ElseIf strDefaultType = "Table" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetTableNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    'temp disabled as causing bug and not currently needed
-                    'SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetTableNames()))
-                End If
-            ElseIf strDefaultType = "Data Frame" Then
-                SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetDataFrameNames()))
-            ElseIf strDefaultType = "Graph" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetGraphNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    'temp disabled as causing bug and not currently needed
-                    'SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetGraphNames()))
-                End If
-            ElseIf strDefaultType = "Filter" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetFilterNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    SetName("")
-                End If
-            ElseIf strDefaultType = "Column Selection" Then
+            Select Case _strDefaultRObjectTypeLabel
+                Case "Column"
+                    If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" AndAlso frmMain.clsRLink.DataFrameExists(ucrDataFrameSelector.cboAvailableDataFrames.Text) Then
+                        SetName(frmMain.clsRLink.GetDefaultColumnNames(strDefaultPrefix, ucrDataFrameSelector.cboAvailableDataFrames.Text))
+                    Else
+                        SetName("")
+                    End If
+                Case "Data Frame"
+                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetDataFrameNames()))
+                Case RObjectTypeLabel.Graph,
+                     RObjectTypeLabel.Table,
+                     RObjectTypeLabel.Model,
+                     RObjectTypeLabel.StructureLabel,
+                     RObjectTypeLabel.Summary
+                    'for objects that are shown in the output viewer. do the following
+                    If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.strCurrDataFrame <> "" Then
+                        SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix,
+                                                                frmMain.clsRLink.GetObjectNames(
+                                                                strDataFrameName:=ucrDataFrameSelector.strCurrDataFrame,
+                                                                strRObjectTypeLabel:=_strDefaultRObjectTypeLabel)))
+                    End If
+                Case "Filter"
+                    If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
+                        SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetFilterNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
+                    Else
+                        SetName("")
+                    End If
 
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetColumnSelectionNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    SetName("")
-                End If
-            ElseIf strDefaultType = "Surv" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetSurvNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    SetName("")
-                End If
-            ElseIf strDefaultType = "Key" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetKeyNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    SetName("")
-                End If
-            ElseIf strDefaultType = "Link" Then
-                If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
-                    SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetLinkNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
-                Else
-                    SetName("")
-                End If
-            End If
+                Case "Column Selection"
+                    If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
+                        SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetColumnSelectionNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
+                    Else
+                        SetName("")
+                    End If
+                Case "Key"
+                    If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
+                        SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetKeyNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
+                    Else
+                        SetName("")
+                    End If
+                Case "Link"
+                    If ucrDataFrameSelector IsNot Nothing AndAlso ucrDataFrameSelector.cboAvailableDataFrames.Text <> "" Then
+                        SetName(frmMain.clsRLink.GetNextDefault(strDefaultPrefix, frmMain.clsRLink.GetLinkNames(ucrDataFrameSelector.cboAvailableDataFrames.Text)))
+                    Else
+                        SetName("")
+                    End If
+            End Select
         End If
     End Sub
 
@@ -327,39 +299,39 @@ Public Class ucrInput
             Case 1
                 Select Case strValidationType
                     Case "RVariable"
-                        MsgBox(Chr(34) & strText & Chr(34) & " is a reserved word in R and cannot be used.", vbOKOnly)
+                        MsgBoxTranslate(Chr(34) & strText & Chr(34) & " is a reserved word in R and cannot be used.", vbOKOnly)
                     Case "Numeric"
-                        MsgBox("Entry must be numeric.", vbOKOnly)
+                        MsgBoxTranslate("Entry must be numeric.", vbOKOnly)
                     Case "List"
-                        MsgBox("Textbox requires a list separated by commas.", vbOKOnly, "Validation Error")
+                        MsgBoxTranslate("Textbox requires a list separated by commas.", vbOKOnly, "Validation Error")
                     Case "NumericList"
-                        MsgBox("Textbox requires a list of numbers separated by commas.", vbOKOnly, "Validation Error")
+                        MsgBoxTranslate("Textbox requires a list of numbers separated by commas.", vbOKOnly, "Validation Error")
                 End Select
             Case 2
                 Select Case strValidationType
                     Case "RVariable"
-                        MsgBox("This name cannot start with " & strText(0), vbOKOnly)
+                        MsgBoxTranslate("This name cannot start with " & strText(0), vbOKOnly)
                     Case "Numeric"
-                        MsgBox("This number must be: " & GetNumericRange(), vbOKOnly)
+                        MsgBoxTranslate("This number must be: " & GetNumericRange(), vbOKOnly)
                     Case "NumericList"
-                        MsgBox("Each item in the list must be numeric.", vbOKOnly, "Validation Error")
+                        MsgBoxTranslate("Each item in the list must be numeric.", vbOKOnly, "Validation Error")
                 End Select
             Case 3
                 Select Case strValidationType
                     Case "RVariable"
-                        MsgBox("This name cannot start with a dot followed by a number/nothing", vbOKOnly)
+                        MsgBoxTranslate("This name cannot start with a dot followed by a number/nothing", vbOKOnly)
                     Case "NumericList"
-                        MsgBox("Each item in the list must be " & GetNumericRange(), vbOKOnly, "Validation Error")
+                        MsgBoxTranslate("Each item in the list must be " & GetNumericRange(), vbOKOnly, "Validation Error")
                 End Select
             Case 4
                 Select Case strValidationType
                     Case "RVariable"
-                        MsgBox("This name cannot contain a space", vbOKOnly)
+                        MsgBoxTranslate("This name cannot contain a space", vbOKOnly)
                 End Select
             Case 5
                 Select Case strValidationType
                     Case "RVariable"
-                        MsgBox("This name contains an invalid character", vbOKOnly)
+                        MsgBoxTranslate("This name contains an invalid character", vbOKOnly)
 
                 End Select
         End Select
@@ -377,13 +349,13 @@ Public Class ucrInput
 
         If strText <> "" AndAlso (strValuesToIgnore Is Nothing OrElse (strValuesToIgnore IsNot Nothing AndAlso Not strValuesToIgnore.Contains(strText))) Then
             If Not IsNumeric(strText) Then
-                iType = 1 'reset as invalid entry 
+                iType = 1 'reset as invalid entry
                 'if numeric expressions are allowed check the expression results to a valid numeric
                 If bNumericExpressionAllowed Then
                     Dim vecOutput As CharacterVector
-                    'is.numeric(x) returns true if the x expression is a valid one. 
+                    'is.numeric(x) returns true if the x expression is a valid one.
                     'So we use it here to check validity of the entry
-                    vecOutput = frmMain.clsRLink.RunInternalScriptGetOutput("is.numeric(" & strText & ")", bSilent:=True)
+                    vecOutput = frmMain.clsRLink.RunInternalScriptGetOutput("is.numeric(tryCatch(eval(parse(text=" & Chr(34) & strText & Chr(34) & ")), error=function(e) NA))", bSilent:=True)
                     If vecOutput IsNot Nothing AndAlso vecOutput.Length > 0 AndAlso Mid(vecOutput(0), 5).ToUpper = "TRUE" Then
                         iType = 0 'set as valid entry
                     End If
@@ -465,8 +437,14 @@ Public Class ucrInput
                 If strVal = "" Then Return 1
                 Dim clsTempParam As New RParameter
                 If bIsNumericInput Then
+                    Dim vecOutput As CharacterVector
                     If Not IsNumeric(strVal) AndAlso (Not (bAllowInf AndAlso ({"Inf", "-Inf"}.Contains(strVal)))) Then
-                        Return 2
+                        vecOutput = frmMain.clsRLink.RunInternalScriptGetOutput(
+                            "is.numeric(tryCatch(eval(parse(text=" & Chr(34) & strVal & Chr(34) & ")), error=function(e) NA))",
+                            bSilent:=True)
+                        If vecOutput Is Nothing OrElse vecOutput.Length = 0 OrElse vecOutput(0).ToUpperInvariant().Contains("FALSE") Then
+                            Return 2
+                        End If
                     ElseIf IsNumeric(strVal) AndAlso (strVal > dcmMaximum OrElse strVal < dcmMinimum) Then
                         Return 3
                     End If
@@ -482,7 +460,7 @@ Public Class ucrInput
         Return 0
     End Function
 
-    Private Sub ucrDataFrameSelector_DataFrameChanged(sender As Object) Handles ucrDataFrameSelector.DataFrameChanged
+    Private Sub ucrDataFrameSelector_ControlValueChanged(sender As Object) Handles ucrDataFrameSelector.ControlValueChanged
         If Not bUserTyped Then
             SetDefaultName()
         End If

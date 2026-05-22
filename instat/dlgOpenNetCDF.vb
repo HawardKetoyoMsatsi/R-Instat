@@ -21,6 +21,12 @@ Imports RDotNet
 Imports System.ComponentModel
 
 Public Class dlgOpenNetCDF
+    Public enumNetCDFMode As String = NetCDFMode.File
+    Public Enum NetCDFMode
+        File
+        Climatic
+    End Enum
+
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
     Private clsImportNetcdfFunction, clsNcOpenFunction, clsNcCloseFunction, clsRFileDetails As New RFunction
@@ -66,6 +72,7 @@ Public Class dlgOpenNetCDF
         Else
             OpenFile()
         End If
+        SetHelpOptions()
         bReset = False
         TestOkEnabled()
         autoTranslate(Me)
@@ -152,6 +159,15 @@ Public Class dlgOpenNetCDF
         End If
     End Sub
 
+    Private Sub SetHelpOptions()
+        Select Case enumNetCDFMode
+            Case NetCDFMode.File
+                ucrBase.iHelpTopicID = 393
+            Case NetCDFMode.Climatic
+                ucrBase.iHelpTopicID = 381
+        End Select
+    End Sub
+
     Private Sub ucrBase_ClickReset(sender As Object, e As EventArgs) Handles ucrBase.ClickReset
         SetDefaults()
         SetRCodeForControls(True)
@@ -213,7 +229,7 @@ Public Class dlgOpenNetCDF
                         clsBoundaryListFunction.ClearParameters()
                     End If
                 Else
-                    MsgBox("File type: '" & strFileExt & "' not recognised as a NetCDF file (.nc).", vbOKOnly)
+                    MsgBoxTranslate("File type: '" & strFileExt & "' not recognised as a NetCDF file (.nc).", vbOKOnly)
                     strShort = ""
                     strMedium = ""
                     strLong = ""
@@ -252,7 +268,6 @@ Public Class dlgOpenNetCDF
                 If strFiles.Count > 0 Then
                     CheckCloseFile()
                     clsNcOpenFunction.AddParameter("filename", Chr(34) & Replace(strFiles(0), "\", "/") & Chr(34))
-                    clsNcOpenFunction.bToBeAssigned = True
                     clsNcOpenFunction.ToScript(strTemp)
                     frmMain.clsRLink.RunScript(strTemp, strComment:="Opening connection to first NetCDF file", bUpdateGrids:=False)
                     bCloseFile = True

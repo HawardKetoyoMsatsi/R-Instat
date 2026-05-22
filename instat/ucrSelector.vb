@@ -13,13 +13,15 @@
 '
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Imports instat.Translations
+
 Public Class ucrSelector
-    Public CurrentReceiver As ucrReceiver
+    Private _currentReceiver As ucrReceiver
     Public Event ResetAll()
     Public Event ResetReceivers()
-    Public Event VariablesInReceiversChanged()
     Public Event DataFrameChanged()
-    Public lstVariablesInReceivers As List(Of Tuple(Of String, String))
+
     Public bFirstLoad As Boolean
     Public strCurrentDataFrame As String = ""
     ' If a dialog has receivers which can have columns from multiple data frames
@@ -45,23 +47,55 @@ Public Class ucrSelector
     '''</summary>
     Private lstOrderedReceivers As New List(Of ucrReceiver)
 
+    ' Set to true when list view items are ordered and false when dialog is reloaded or reset
+    ' Used to ensure that the items are reloaded to their default appearance order when reset is clicked
+    Private Enum SelectorSortType
+        Appearance
+        Alphabetically
+    End Enum
+    Private enumCurrentListViewSortStatus As SelectorSortType = SelectorSortType.Appearance
+
+    Public ReadOnly Property CurrentReceiver As ucrReceiver
+        Get
+            Return _currentReceiver
+        End Get
+    End Property
+
     Public Sub New()
         ' This call is required by the designer.
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
-        lstVariablesInReceivers = New List(Of Tuple(Of String, String))
         bFirstLoad = True
         'bIncludeOverall = False 
         lstIncludedMetadataProperties = New List(Of KeyValuePair(Of String, String()))
         lstExcludedMetadataProperties = New List(Of KeyValuePair(Of String, String()))
         strType = "column"
+
+        SetSortRightClickMenuText()
     End Sub
 
     Private Sub ucrSelection_load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
             bFirstLoad = False
         End If
+        'always load selector contents on load event because contents may have been changed at R level 
+        'and the control needs to refresh the data frame names.
+        LoadList()
+        'always return the focus to the first Receiver when re-opening the dialogue.
+        If lstOrderedReceivers.Count > 0 Then
+            Dim lstVisibleReceivers As List(Of ucrReceiver)
+            lstVisibleReceivers = lstOrderedReceivers.Where(Function(ctrl) ctrl.Visible).ToList()
+            lstVisibleReceivers = lstVisibleReceivers.OrderBy(Function(ucr) ucr.TabIndex).ToList()
+            If lstVisibleReceivers.Count > 0 Then
+                SetCurrentReceiver(lstVisibleReceivers(0)) 'set the focus to the first Receiver in the dialogue.
+            End If
+        End If
+    End Sub
+
+    Private Sub SetSortRightClickMenuText()
+        ' TODO. Add translations
+        mnuSortToolStrip.Text = If(enumCurrentListViewSortStatus = SelectorSortType.Appearance, "Sort Alphabetically", "Sort by Appearance")
     End Sub
 
     Protected Sub OnResetAll()
@@ -112,18 +146,17 @@ Public Class ucrSelector
 
         lstCombinedMetadataLists = CombineMetadataLists(CurrentReceiver.lstIncludedMetadataProperties, CurrentReceiver.lstExcludedMetadataProperties)
         If CurrentReceiver.bExcludeFromSelector Then
-            arrStrExclud = GetVariablesInReceiver().ToArray
+            arrStrExclud = CurrentReceiver.GetVariableNamesList(bWithQuotes:=False)
         End If
 
         'set the type of 'elements' to show. If current receiver is set to a particular 'element' type then use it  
         strCurrentType = If(CurrentReceiver.bTypeSet, CurrentReceiver.GetItemType(), strType)
 
+        'holds the selector's list view 'fill conditions'
+        'used as a 'cache' to check if there is need to clear and refill list view based on supplied parameters
+        Static _strCurrentSelectorFillCondition As String = ""
         'if selector contains columns check if fill conditions are just the same
-        If strCurrentType = "column" Then
-
-            'holds the selector's list view 'fill conditions'
-            'used as a 'cache' to check if there is need to clear and refill list view based on supplied parameters
-            Static _strCurrentSelectorFillCondition As String = ""
+        If (strCurrentType = "column" OrElse strCurrentType = "database_variables") AndAlso String.IsNullOrEmpty(CurrentReceiver.strObjectName) Then
 
             'check if the fill condition is the same, if it is then no need to refill the listview with the same data.
             'LoadList is called several times by different events raised in different places(e.g by linked receivers clearing and setting their contents ).
@@ -135,24 +168,42 @@ Public Class ucrSelector
                                                                strHeading:=CurrentReceiver.strSelectorHeading,
                                                                arrStrExcludedItems:=arrStrExclud,
                                                                strDatabaseQuery:=CurrentReceiver.strDatabaseQuery,
-                                                               strNcFilePath:=CurrentReceiver.strNcFilePath)
+                                                               strNcFilePath:=CurrentReceiver.strNcFilePath,
+                                                               enumCurrentListViewSortStatus)
             If strNewSelectorFillCondition = _strCurrentSelectorFillCondition Then
                 Exit Sub
             End If
 
             _strCurrentSelectorFillCondition = strNewSelectorFillCondition
+        Else
+            'reset selector fill conditions
+            _strCurrentSelectorFillCondition = ""
         End If
 
         'todo, for columns, the list view should be field with variables from the .Net metadata object
-        frmMain.clsRLink.FillListView(lstAvailableVariable, strType:=strCurrentType, lstIncludedDataTypes:=lstCombinedMetadataLists(0), lstExcludedDataTypes:=lstCombinedMetadataLists(1), strHeading:=CurrentReceiver.strSelectorHeading, strDataFrameName:=strCurrentDataFrame, strExcludedItems:=arrStrExclud, strDatabaseQuery:=CurrentReceiver.strDatabaseQuery, strNcFilePath:=CurrentReceiver.strNcFilePath)
-        EnableDataOptions(strCurrentType)
+        frmMain.clsRLink.FillListView(lstAvailableVariable, strType:=strCurrentType, lstIncludedDataTypes:=lstCombinedMetadataLists(0), lstExcludedDataTypes:=lstCombinedMetadataLists(1),
+                                      strHeading:=CurrentReceiver.strSelectorHeading, strDataFrameName:=strCurrentDataFrame, strExcludedItems:=arrStrExclud,
+                                      strDatabaseQuery:=CurrentReceiver.strDatabaseQuery, strNcFilePath:=CurrentReceiver.strNcFilePath,
+                                      strObjectName:=CurrentReceiver.strObjectName)
 
+        ' Sort sekector alphabetically if the sort order is set to alphabetical
+        If enumCurrentListViewSortStatus = SelectorSortType.Alphabetically Then
+            SortListViewAlphabetically()
+        End If
+
+        If Not CurrentReceiver.bExcludeFromSelector Then
+            'TODO. Investigate why this has to be called here instead of just being called in ucrReceiver control.SetControlValue()
+            'See PR #8605 for related comments added in ucrReceiver.
+            CurrentReceiver.RemoveAnyVariablesNotInSelector() 'this needed for the multiple receiver(s) where the autofill is not applied
+        End If
+        EnableDataOptions(strCurrentType)
     End Sub
 
     Private Function GetSelectorFillCondition(dataFrame As clsDataFrame, strElementType As String,
             lstCombinedMetadataLists As List(Of List(Of KeyValuePair(Of String, String()))),
             strHeading As String, arrStrExcludedItems As String(), strDatabaseQuery As String,
-            strNcFilePath As String)
+            strNcFilePath As String, enumCurrentListViewSortStatus As SelectorSortType)
+
         Dim strSelectorFillCondition As String = ""
 
         If dataFrame IsNot Nothing Then
@@ -191,23 +242,50 @@ Public Class ucrSelector
             Next
         End If
 
+        strSelectorFillCondition &= enumCurrentListViewSortStatus
+
         Return strSelectorFillCondition
     End Function
 
-    Private Function GetVariablesInReceiver() As List(Of String)
-        Dim lstVars As New List(Of String)
+    Private Sub SortListViewAlphabetically()
+        ' Preserve selection
+        Dim selectedItems As List(Of ListViewItem) = lstAvailableVariable.SelectedItems.Cast(Of ListViewItem)().ToList()
 
-        For Each tplTemp As Tuple(Of String, String) In lstVariablesInReceivers
-            lstVars.Add(tplTemp.Item1)
+        ' Get all existing items into a list (references preserved)
+        Dim items As List(Of ListViewItem) = lstAvailableVariable.Items.Cast(Of ListViewItem)().ToList()
+
+        ' Sort by the Text property (case-insensitive)
+        items.Sort(Function(a, b) String.Compare(a.Text, b.Text, StringComparison.OrdinalIgnoreCase))
+
+        ' Temporarily disable redrawing for smoother UI update
+        lstAvailableVariable.BeginUpdate()
+
+        ' Clear only the display order (not destroying item references)
+        lstAvailableVariable.Items.Clear()
+        lstAvailableVariable.Items.AddRange(items.ToArray())
+
+        ' Restore selection
+        For Each item As ListViewItem In selectedItems
+            item.Selected = True
         Next
-        Return lstVars
-    End Function
+
+        ' Ensure the first selected item is visible
+        If lstAvailableVariable.SelectedItems.Count > 0 Then
+            lstAvailableVariable.SelectedItems(0).EnsureVisible()
+        End If
+
+        ' Re-enable drawing
+        lstAvailableVariable.EndUpdate()
+    End Sub
+
 
     Public Overridable Sub Reset()
         RaiseEvent ResetReceivers()
-        lstVariablesInReceivers.Clear()
+        ' Reset the sort status to default appearance
+        enumCurrentListViewSortStatus = SelectorSortType.Appearance
+        SetSortRightClickMenuText()
+
         LoadList()
-        'lstItemsInReceivers.Clear()
     End Sub
 
     Public Sub SetCurrentReceiver(conReceiver As ucrReceiver)
@@ -217,8 +295,8 @@ Public Class ucrSelector
             CurrentReceiver.RemoveColor()
         End If
         If conReceiver IsNot Nothing Then
-            CurrentReceiver = conReceiver
-            CurrentReceiver.SetColor()
+            _currentReceiver = conReceiver
+            If CurrentReceiver.bAsReceiver Then CurrentReceiver.SetColor()
             SetPrimaryDataFrameOptions(strPrimaryDataFrame, Not CurrentReceiver.bAttachedToPrimaryDataFrame AndAlso CurrentReceiver.bOnlyLinkedToPrimaryDataFrames)
             If Not CurrentReceiver.IsEmpty Then
                 lstReceiverDataFrames = CurrentReceiver.GetItemsDataFrames()
@@ -240,7 +318,7 @@ Public Class ucrSelector
                 lstAvailableVariable.MultiSelect = True
             End If
         Else
-            CurrentReceiver = Nothing
+            _currentReceiver = Nothing
         End If
     End Sub
 
@@ -253,7 +331,7 @@ Public Class ucrSelector
 
     Public Sub Add()
         If CurrentReceiver IsNot Nothing AndAlso (lstAvailableVariable.SelectedItems.Count > 0) Then
-            CurrentReceiver.AddSelected()
+            CurrentReceiver.AddSelectedSelectorVariables()
             'sets current focus enabling correct tab navigation
             CurrentReceiver.Focus()
             'check if autoswitching from the receiver is allowed before doing an autoswitch. 
@@ -317,30 +395,18 @@ Public Class ucrSelector
         SelectAll()
     End Sub
 
+    Private Sub mnuSortToolStrip_Click(sender As Object, e As EventArgs) Handles mnuSortToolStrip.Click
+        enumCurrentListViewSortStatus = If(enumCurrentListViewSortStatus = SelectorSortType.Appearance, SelectorSortType.Alphabetically, SelectorSortType.Appearance)
+
+        ' Change the label of the sort right click menu depedningon the sort status
+        SetSortRightClickMenuText()
+
+        ' Reload the contents of the list view to apply the sort order
+        LoadList()
+    End Sub
+
     Public Sub SetLinkedSelector(ucrNewLinkedSelector As ucrSelector)
         ucrLinkedSelector = ucrNewLinkedSelector
-    End Sub
-
-    Public Sub AddToVariablesList(strVariable As String, Optional strDataFrame As String = "")
-        If strDataFrame = "" OrElse strDataFrame = strCurrentDataFrame Then
-            lstVariablesInReceivers.Add(New Tuple(Of String, String)(strVariable, strDataFrame))
-            If ucrLinkedSelector IsNot Nothing Then
-                ucrLinkedSelector.AddToVariablesList(strVariable, strCurrentDataFrame)
-            End If
-            RaiseEvent VariablesInReceiversChanged()
-        End If
-    End Sub
-
-    Public Sub RemoveFromVariablesList(strVariable As String, Optional strDataFrame As String = "")
-        For i As Integer = lstVariablesInReceivers.Count - 1 To 0 Step -1
-            If lstVariablesInReceivers(i).Item1 = strVariable AndAlso (strDataFrame = "" OrElse lstVariablesInReceivers(i).Item2 = strDataFrame) Then
-                lstVariablesInReceivers.RemoveAt(i)
-            End If
-        Next
-        If ucrLinkedSelector IsNot Nothing Then
-            ucrLinkedSelector.RemoveFromVariablesList(strVariable, strCurrentDataFrame)
-        End If
-        RaiseEvent VariablesInReceiversChanged()
     End Sub
 
     Public Sub AddIncludedMetadataProperty(strProperty As String, strInclude As String())
@@ -474,6 +540,7 @@ Public Class ucrSelector
         If SelectionMenuStrip.Visible Then
             If CurrentReceiver IsNot Nothing Then
                 AddSelectedToolStripMenuItem.Enabled = True
+                mnuSortToolStrip.Enabled = True
                 If TypeOf CurrentReceiver Is ucrReceiverSingle Then
                     AddAllToolStripMenuItem.Enabled = False
                     SelectAllToolStripMenuItem.Enabled = False
@@ -481,12 +548,13 @@ Public Class ucrSelector
                     AddAllToolStripMenuItem.Enabled = True
                     SelectAllToolStripMenuItem.Enabled = True
                 Else
-                    MsgBox("Current receiver is neither ucrReceiverSingle or ucrReceiverMultiple. Cannot determine visibility of menu items.")
+                    MsgBoxTranslate("Current receiver is neither ucrReceiverSingle or ucrReceiverMultiple. Cannot determine visibility of menu items.")
                 End If
             Else
                 AddSelectedToolStripMenuItem.Enabled = False
                 AddAllToolStripMenuItem.Enabled = False
                 SelectAllToolStripMenuItem.Enabled = False
+                mnuSortToolStrip.Enabled = False
             End If
         End If
     End Sub

@@ -22,6 +22,8 @@ Imports instat.Translations
 Public Class ucrDataView
     Private _clsDataBook As clsDataBook
     Private _grid As IDataViewGrid
+    Private bOnlyUpdateOneCell As Boolean = False
+    Private _hasChanged As Boolean
 
     Public WriteOnly Property DataBook() As clsDataBook
         Set(value As clsDataBook)
@@ -81,11 +83,14 @@ Public Class ucrDataView
 
     Private Sub AttachEventsToGrid()
         AddHandler _grid.WorksheetChanged, AddressOf CurrentWorksheetChanged
+        AddHandler _grid.WorksheetInserted, AddressOf WorksheetInserted
         AddHandler _grid.WorksheetRemoved, AddressOf WorksheetRemoved
         AddHandler _grid.ReplaceValueInData, AddressOf ReplaceValueInData
         AddHandler _grid.PasteValuesToDataframe, AddressOf PasteValuesToDataFrame
         AddHandler _grid.CellDataChanged, AddressOf CellDataChanged
         AddHandler _grid.DeleteValuesToDataframe, AddressOf DeleteCell_Click
+        AddHandler _grid.EditCell, AddressOf EditCell
+        AddHandler _grid.FindRow, AddressOf FindRow
     End Sub
 
     Private Sub RefreshWorksheet(fillWorkSheet As clsWorksheetAdapter, dataFrame As clsDataFrame)
@@ -97,6 +102,7 @@ Public Class ucrDataView
         _grid.AddRowData(dataFrame)
         _grid.UpdateWorksheetStyle(fillWorkSheet)
         dataFrame.clsVisibleDataFramePage.HasChanged = False
+
         RefreshDisplayInformation()
     End Sub
 
@@ -118,6 +124,7 @@ Public Class ucrDataView
 
     Private Sub AddAndUpdateWorksheets()
         Dim firstAddedWorksheet As clsWorksheetAdapter = Nothing
+        Dim strCurrWorksheet As String = GetCurrentDataFrameNameFocus()
         For Each clsDataFrame In _clsDataBook.DataFrames
             Dim worksheet As clsWorksheetAdapter = _grid.GetWorksheet(clsDataFrame.strName)
             If worksheet Is Nothing Then
@@ -127,7 +134,11 @@ Public Class ucrDataView
                 End If
             End If
             RefreshWorksheet(worksheet, clsDataFrame)
+
         Next
+        If strCurrWorksheet IsNot Nothing Then
+            _grid.ReOrderWorksheets(strCurrWorksheet)
+        End If
         If firstAddedWorksheet IsNot Nothing Then
             _grid.CurrentWorksheet = firstAddedWorksheet
         End If
@@ -138,11 +149,19 @@ Public Class ucrDataView
             Exit Sub
         End If
         _clsDataBook.RefreshData()
-        AddAndUpdateWorksheets()
-        _grid.RemoveOldWorksheets()
-        If _clsDataBook.DataFrames.Count = 0 Then
-            RefreshDisplayInformation()
+        'If we are updating one cell we do not need to refresh the grid and the 
+        'refresh of that cell will be done manually 
+        If Not bOnlyUpdateOneCell Then
+            AddAndUpdateWorksheets()
+            _grid.RemoveOldWorksheets()
+            If _clsDataBook.DataFrames.Count = 0 Then
+                RefreshDisplayInformation()
+            End If
         End If
+        _hasChanged = True
+        EnableDisableUndoMenu()
+        _grid.Focus()
+        frmMain.EnableDisbaleViewSwapMenu(_clsDataBook.DataFrames.Count > 0)
     End Sub
 
     ''' <summary>
@@ -169,15 +188,33 @@ Public Class ucrDataView
         Return If(_grid.CurrentWorksheet Is Nothing, Nothing, _grid.CurrentWorksheet.Name)
     End Function
 
+    Public Property HasDataChanged() As Boolean
+        Get
+            Dim currentDataFrame = GetCurrentDataFrameFocus()
+            If currentDataFrame IsNot Nothing AndAlso currentDataFrame.clsVisibleDataFramePage IsNot Nothing Then
+                Return currentDataFrame.clsVisibleDataFramePage.HasDataChangedForAutoSave
+            End If
+            Return False ' Or a default value
+        End Get
+        Set(ByVal value As Boolean)
+            Dim currentDataFrame = GetCurrentDataFrameFocus()
+            If currentDataFrame IsNot Nothing AndAlso currentDataFrame.clsVisibleDataFramePage IsNot Nothing Then
+                currentDataFrame.clsVisibleDataFramePage.HasDataChangedForAutoSave = value
+            End If
+            ' Optionally handle the case where currentDataFrame is Nothing
+        End Set
+    End Property
+
     Private Sub mnuDeleteCol_Click(sender As Object, e As EventArgs) Handles mnuDeleteCol.Click
         If GetSelectedColumns.Count = GetCurrentDataFrameFocus()?.iTotalColumnCount Then
-            MsgBox("Cannot delete all visible columns." & Environment.NewLine & "Use Prepare > Data Object > Delete Data Frame if you wish to delete the data.", MsgBoxStyle.Information, "Cannot Delete All Columns")
+            MsgBoxTranslate("Cannot delete all visible columns." & Environment.NewLine & "Use Prepare > Data Object > Delete Data Frame if you wish to delete the data.", MsgBoxStyle.Information, "Cannot Delete All Columns")
         Else
-            Dim deleteCol = MsgBox("Are you sure you want to delete these column(s)?" & Environment.NewLine & "This action cannot be undone.", MessageBoxButtons.YesNo, "Delete Column")
+            Dim deleteCol = MsgBoxTranslate("Are you sure you want to delete these column(s)?", MessageBoxButtons.YesNo, "Delete Column")
             If deleteCol = DialogResult.Yes Then
                 StartWait()
                 GetCurrentDataFrameFocus().clsPrepareFunctions.DeleteColumn(GetSelectedColumnNames())
                 EndWait()
+                _grid.Focus()
             End If
         End If
     End Sub
@@ -186,20 +223,23 @@ Public Class ucrDataView
         StartWait()
         GetCurrentDataFrameFocus().clsPrepareFunctions.InsertRows(GetSelectedRows.Count, GetLastSelectedRow(), False)
         EndWait()
+        _grid.Focus()
     End Sub
 
     Private Sub mnuInsertRowsBefore_Click(sender As Object, e As EventArgs) Handles mnuInsertRowsBefore.Click
         StartWait()
         GetCurrentDataFrameFocus().clsPrepareFunctions.InsertRows(GetSelectedRows.Count, GetFirstSelectedRow, True)
         EndWait()
+        _grid.Focus()
     End Sub
 
     Private Sub mnuDeleteRows_Click(sender As Object, e As EventArgs) Handles mnuDeleteRows.Click
-        Dim Delete = MsgBox("Are you sure you want to delete these row(s)?" & Environment.NewLine & "This action cannot be undone.", MessageBoxButtons.YesNo, "Delete Row(s)")
+        Dim Delete = MsgBoxTranslate("Are you sure you want to delete these row(s)?" & Environment.NewLine & "This action cannot be undone.", MessageBoxButtons.YesNo, "Delete Row(s)")
         If Delete = DialogResult.Yes Then
             StartWait()
             GetCurrentDataFrameFocus().clsPrepareFunctions.DeleteRows(GetSelectedRows())
             EndWait()
+            _grid.Focus()
         End If
     End Sub
 
@@ -215,6 +255,12 @@ Public Class ucrDataView
         _grid.SelectAll()
     End Sub
 
+    Private Sub EnableDisableUndoMenu()
+        If GetWorkSheetCount() <> 0 AndAlso _clsDataBook IsNot Nothing AndAlso GetCurrentDataFrameFocus() IsNot Nothing Then
+            frmMain.mnuUndo.Enabled = GetCurrentDataFrameFocus.clsVisibleDataFramePage.HasUndoHistory
+        End If
+    End Sub
+
     Private Sub deleteSheet_Click(sender As Object, e As EventArgs) Handles deleteDataFrame.Click
         dlgDeleteDataFrames.SetDataFrameToAdd(_grid.CurrentWorksheet.Name)
         dlgDeleteDataFrames.ShowDialog()
@@ -226,16 +272,45 @@ Public Class ucrDataView
 
     Private Sub mnuColumnRename_Click(sender As Object, e As EventArgs) Handles mnuColumnRename.Click
         dlgName.SetCurrentColumn(GetFirstSelectedColumnName(), _grid.CurrentWorksheet.Name)
+        dlgName.bDefaultToSingle = True
         dlgName.ShowDialog()
     End Sub
 
-    Public Sub CurrentWorksheetChanged()
-        RefreshDisplayInformation()
+    Public Sub WorksheetInserted()
+        DisableEnableUndo(frmMain.clsInstatOptions.bSwitchOffUndo)
     End Sub
+
+    Public Sub CurrentWorksheetChanged()
+        frmMain.ucrColumnMeta.SetCurrentDataFrame(GetCurrentDataFrameNameFocus())
+        RefreshDisplayInformation()
+        IsUndo()
+    End Sub
+
+    Public Function GetFirstRowHeader() As String
+        Return _grid.GetFirstRowHeader
+    End Function
+
+    Public Function GetLastRowHeader() As String
+        Return _grid.GetLastRowHeader
+    End Function
 
     Public Function GetWorkSheetCount() As Integer
         Return _grid.GetWorksheetCount
     End Function
+
+    Public Sub RemoveAllBackgroundColors()
+        _grid.RemoveAllBackgroundColors()
+    End Sub
+
+    Public Sub AdjustColumnWidthAfterWrapping(strColumn As String, Optional bApplyWrap As Boolean = False)
+        _grid.AdjustColumnWidthAfterWrapping(strColumn, bApplyWrap)
+    End Sub
+
+    Public Sub IsUndo()
+        If GetWorkSheetCount() <> 0 AndAlso _clsDataBook IsNot Nothing AndAlso GetCurrentDataFrameFocus() IsNot Nothing Then
+            frmMain.clsInstatOptions.SetOffUndo(GetCurrentDataFrameFocus.clsVisibleDataFramePage.IsUndo(GetCurrentDataFrameNameFocus))
+        End If
+    End Sub
 
     Private Sub RefreshDisplayInformation()
         If GetWorkSheetCount() <> 0 AndAlso _clsDataBook IsNot Nothing AndAlso GetCurrentDataFrameFocus() IsNot Nothing Then
@@ -243,9 +318,16 @@ Public Class ucrDataView
             SetDisplayLabels()
             UpdateNavigationButtons()
             SetGridVisibility(True)
+            EnableDisableUndoMenu()
         Else
             frmMain.tstatus.Text = GetTranslation("No data loaded")
             SetGridVisibility(False)
+        End If
+    End Sub
+
+    Public Sub DisableEnableUndo(bDisable As Boolean)
+        If GetWorkSheetCount() <> 0 AndAlso _clsDataBook IsNot Nothing AndAlso GetCurrentDataFrameFocus() IsNot Nothing Then
+            GetCurrentDataFrameFocus.clsVisibleDataFramePage.DisableEnableUndo(bDisable, GetCurrentDataFrameNameFocus)
         End If
     End Sub
 
@@ -295,25 +377,59 @@ Public Class ucrDataView
         End If
     End Sub
 
-    Private Sub SetDisplayLabels()
-        Dim strRowLabel As String = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intStartRow & " to " &
-                             GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndRow & " of "
-        Dim strColLabel As String = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intStartColumn & " to " &
-                              GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndColumn & " of "
+    ''' <summary>
+    ''' Set the text at the bottom of the status bar. For example:
+    ''' <para>Rows 1:1000 (42063) Columns 1:10 (10)</para>
+    ''' <para>Rows 11000 (10672/42063) Columns 1:10 (10)</para>
+    ''' <para>Rows 1:1000 (10672/42063) Columns 1:7 (7/641)</para>
+    ''' </summary>
+    Public Sub SetDisplayLabels()
+        If IsNothing(GetCurrentDataFrameFocus()) Then
+            Exit Sub
+        End If
+
+        Dim startRow As Integer = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intStartRow
+        Dim endRow As Integer = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndRow
+        Dim filteredRows As Integer = GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iFilteredRowCount
+        Dim totalRows As Integer = GetCurrentDataFrameFocus().iTotalRowCount
+
+        Dim strRowLabel As String
+        If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bFilterApplied AndAlso filteredRows = 0 Then
+            strRowLabel = " 0:0 ("
+        Else
+            strRowLabel = " " & startRow & ":" & endRow & " ("
+        End If
+
+        Dim startCol As Integer = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intStartColumn
+        Dim endCol As Integer = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndColumn
+        Dim totalCols As Integer = GetCurrentDataFrameFocus().iTotalColumnCount
+
+        Dim strColLabel As String = " " & startCol & ":" & endCol & " ("
+
+        ' Set Row Display Text
+        lblRowDisplay.Text = GetTranslation("Rows") ' Required by translation engine
+        lblRowDisplay.Text &= strRowLabel
 
         If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bFilterApplied Then
-            lblRowDisplay.Text = "Rows " & strRowLabel & GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iFilteredRowCount &
-                                 " (" & GetCurrentDataFrameFocus().iTotalRowCount & ")" & " | Filter: " & GetCurrentDataFrameFocus().clsFilterOrColumnSelection.strName
+            lblRowDisplay.Text &= filteredRows & "/" & totalRows & ") | " &
+                              GetCurrentDataFrameFocus().clsFilterOrColumnSelection.strName
         Else
-            lblRowDisplay.Text = "Showing rows " & strRowLabel & GetCurrentDataFrameFocus().iTotalRowCount
+            lblRowDisplay.Text &= totalRows & ")"
         End If
 
-        If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bColumnSelectionApplied Then
-            lblColDisplay.Text = "Columns " & strColLabel & GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndColumn &
-                                " (" & GetCurrentDataFrameFocus().iTotalColumnCount & ")" & " | Selection: " & GetCurrentDataFrameFocus().clsFilterOrColumnSelection.strSelectionName
+        ' Set Column Display Text
+        lblColDisplay.Text = GetTranslation("Columns") ' Required by translation engine
+        lblColDisplay.Text &= strColLabel
+
+        If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bColumnSelectionApplied AndAlso
+       GetCurrentDataFrameFocus.clsVisibleDataFramePage.UseColumnSelectionInDataView Then
+            lblColDisplay.Text &= GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iSelectedColumnCount &
+                              "/" & totalCols & ") | " &
+                              GetCurrentDataFrameFocus().clsFilterOrColumnSelection.strSelectionName
         Else
-            lblColDisplay.Text = "Showing columns " & strColLabel & GetCurrentDataFrameFocus().iTotalColumnCount
+            lblColDisplay.Text &= totalCols & ")"
         End If
+
         ResizeLabels()
     End Sub
 
@@ -321,6 +437,7 @@ Public Class ucrDataView
         Dim dblValue As Double
         Dim iValue As Integer
         Dim bWithQuotes As Boolean
+        Dim bListOfVector = False
 
         If strNewValue = "NA" Then
             bWithQuotes = False
@@ -328,7 +445,7 @@ Public Class ucrDataView
             Select Case GetCurrentDataFrameFocus().clsPrepareFunctions.GetDataTypeLabel(strColumnName)
                 Case "factor"
                     If Not GetCurrentDataFrameFocus().clsPrepareFunctions.GetColumnFactorLevels(strColumnName).Contains(strNewValue) Then
-                        MsgBox("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: factor. Values must be an existing level of this factor column.", MsgBoxStyle.Exclamation, "Invalid Value")
+                        MsgBoxTranslate("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: factor. Values must be an existing level of this factor column.", MsgBoxStyle.Exclamation, "Invalid Value")
                         Exit Sub
                     Else
                         bWithQuotes = True
@@ -337,14 +454,22 @@ Public Class ucrDataView
                     If Double.TryParse(strNewValue, dblValue) Then
                         bWithQuotes = False
                     Else
-                        MsgBox("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: numeric. Values must be numeric.", MsgBoxStyle.Exclamation, "Invalid Value")
+                        MsgBoxTranslate("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: numeric. Values must be numeric.", MsgBoxStyle.Exclamation, "Invalid Value")
                         Exit Sub
                     End If
                 Case "integer"
                     If Integer.TryParse(strNewValue, iValue) Then
                         bWithQuotes = False
                     Else
-                        MsgBox("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: integer. Values must be integer.", MsgBoxStyle.Exclamation, "Invalid Value")
+                        MsgBoxTranslate("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: integer. Values must be integer.", MsgBoxStyle.Exclamation, "Invalid Value")
+                        Exit Sub
+                    End If
+                Case "list"
+                    If strNewValue.Split(",").All(Function(x) Integer.TryParse(x, iValue) Or Double.TryParse(x, dblValue) Or Trim(x) = "NA") Then
+                        bWithQuotes = False
+                        bListOfVector = strNewValue.Contains(",")
+                    Else
+                        MsgBoxTranslate("Invalid value: '" & strNewValue & "'" & Environment.NewLine & "This column is: a list of numeric and numeric vector. Values must be numeric.", MsgBoxStyle.Exclamation, "Invalid Value")
                         Exit Sub
                     End If
                 Case Else
@@ -356,7 +481,9 @@ Public Class ucrDataView
             End Select
         End If
         StartWait()
-        GetCurrentDataFrameFocus().clsPrepareFunctions.ReplaceValueInData(strNewValue, strColumnName, strRowText, bWithQuotes)
+        bOnlyUpdateOneCell = True
+        GetCurrentDataFrameFocus().clsPrepareFunctions.ReplaceValueInData(strNewValue, strColumnName, strRowText, bWithQuotes, bListOfVector)
+        bOnlyUpdateOneCell = False
         EndWait()
     End Sub
 
@@ -377,6 +504,16 @@ Public Class ucrDataView
         dlgLabelsLevels.ShowDialog()
     End Sub
 
+    Public Sub UseColumnSelectionInDataView(bUseColumnSelecion As Boolean)
+        If GetCurrentDataFrameFocus() IsNot Nothing Then
+            GetCurrentDataFrameFocus().clsVisibleDataFramePage.UseColumnSelectionInDataView = bUseColumnSelecion
+        End If
+    End Sub
+
+    Public Function IsColumnSelectionApplied() As Boolean
+        Return GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bColumnSelectionApplied
+    End Function
+
     Private Function GetSelectedColumns() As List(Of clsColumnHeaderDisplay)
         Return _grid.GetSelectedColumns()
     End Function
@@ -389,7 +526,7 @@ Public Class ucrDataView
         Return GetSelectedColumns().Select(Function(x) x.strName).ToList()
     End Function
 
-    Private Function GetFirstSelectedColumnName() As String
+    Public Function GetFirstSelectedColumnName() As String
         Return GetSelectedColumns().FirstOrDefault().strName
     End Function
 
@@ -417,12 +554,12 @@ Public Class ucrDataView
         Return GetSelectedRows.LastOrDefault()
     End Function
 
-    Private Sub StartWait()
+    Public Sub StartWait()
         Cursor = Cursors.WaitCursor
         _grid.bEnabled = False
     End Sub
 
-    Private Sub EndWait()
+    Public Sub EndWait()
         _grid.bEnabled = True
         Cursor = Cursors.Default
     End Sub
@@ -430,12 +567,6 @@ Public Class ucrDataView
     Private Sub mnuConvertText_Click(sender As Object, e As EventArgs) Handles mnuConvertText.Click
         StartWait()
         GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToText(GetSelectedColumnNames())
-        EndWait()
-    End Sub
-
-    Private Sub mnuConvertToLogical_Click(sender As Object, e As EventArgs) Handles mnuConvertToLogical.Click
-        StartWait()
-        GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToLogical(GetSelectedColumnNames())
         EndWait()
     End Sub
 
@@ -473,6 +604,12 @@ Public Class ucrDataView
         EndWait()
     End Sub
 
+    Private Sub mnuConvertToDate_Click(sender As Object, e As EventArgs) Handles mnuConvertToDate.Click, mnuConvertToColumnDate.Click
+        dlgMakeDate.SetCurrentColumn(GetFirstSelectedColumnName(), _grid.CurrentWorksheet.Name)
+        dlgMakeDate.enumMakedateMode = dlgMakeDate.MakedateMode.Column
+        dlgMakeDate.ShowDialog()
+    End Sub
+
     Private Sub mnuSort_Click(sender As Object, e As EventArgs) Handles mnuSort.Click
         dlgSort.SetCurrentColumn(GetFirstSelectedColumnName(), _grid.CurrentWorksheet.Name)
         dlgSort.ShowDialog()
@@ -487,12 +624,6 @@ Public Class ucrDataView
     Private Sub mnuUnfreeze_Click(sender As Object, e As EventArgs)
         StartWait()
         GetCurrentDataFrameFocus().clsPrepareFunctions.UnFreezeColumns()
-        EndWait()
-    End Sub
-
-    Private Sub ViewSheet_Click(sender As Object, e As EventArgs) Handles ViewSheet.Click
-        StartWait()
-        GetCurrentDataFrameFocus().clsPrepareFunctions.ViewDataFrame()
         EndWait()
     End Sub
 
@@ -528,12 +659,12 @@ Public Class ucrDataView
     Private Sub columnContextMenuStrip_Opening(sender As Object, e As CancelEventArgs) Handles columnContextMenuStrip.Opening
         If IsOnlyOneColumnSelected() Then
             mnuLevelsLabels.Enabled = IsFirstSelectedColumnAFactor()
-            mnuDeleteCol.Text = GetTranslation("Delete Column")
+            mnuDeleteCol.Text = GetTranslation("Delete Column(s)")
             mnuInsertColsBefore.Text = GetTranslation("Insert 1 Column Before")
             mnuInsertColsAfter.Text = GetTranslation("Insert 1 Column After")
         Else
             mnuLevelsLabels.Enabled = False
-            mnuDeleteCol.Text = GetTranslation("Delete Columns")
+            mnuDeleteCol.Text = GetTranslation("Delete Column(s)")
             mnuInsertColsBefore.Text = "Insert " & GetSelectedColumns.Count & " Columns Before"
             mnuInsertColsAfter.Text = "Insert " & GetSelectedColumns.Count & " Columns After"
         End If
@@ -561,6 +692,7 @@ Public Class ucrDataView
 
     Private Sub mnuRenameColumn_Click(sender As Object, e As EventArgs) Handles mnuRenameColumn.Click
         dlgName.SetCurrentColumn(GetFirstSelectedColumnName(), _grid.CurrentWorksheet.Name)
+        dlgName.bDefaultToSingle = True
         dlgName.ShowDialog()
     End Sub
 
@@ -591,12 +723,6 @@ Public Class ucrDataView
         EndWait()
     End Sub
 
-    Private Sub mnuConvertToLogic_Click(sender As Object, e As EventArgs) Handles mnuConvertToLogic.Click
-        StartWait()
-        GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToLogical(GetSelectedColumnNames())
-        EndWait()
-    End Sub
-
     Private Sub mnuConvertToNumeric_Click(sender As Object, e As EventArgs) Handles mnuConvertToNumeric.Click, mnuConvertVariate.Click
         For Each strColumn In GetSelectedColumnNames()
             Dim iNonNumericValues As Integer = GetCurrentDataFrameFocus().clsPrepareFunctions.GetAmountOfNonNumericValuesInColumn(strColumn)
@@ -604,18 +730,36 @@ Public Class ucrDataView
                 GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, True)
             Else
                 Dim bCheckLabels As Boolean = GetCurrentDataFrameFocus().clsPrepareFunctions.CheckHasLabels(strColumn)
-                frmConvertToNumeric.SetDataFrameName(GetCurrentDataFrameFocus().strName)
-                frmConvertToNumeric.SetColumnName(strColumn)
-                frmConvertToNumeric.CheckLabels(bCheckLabels)
-                frmConvertToNumeric.SetNonNumeric(iNonNumericValues)
-                frmConvertToNumeric.ShowDialog()
-                ' Yes for "normal" convert and No for "ordinal" convert
-                If frmConvertToNumeric.DialogResult = DialogResult.Yes Then
-                    GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, True)
-                ElseIf frmConvertToNumeric.DialogResult = DialogResult.No Then
-                    GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, False)
-                ElseIf frmConvertToNumeric.DialogResult = DialogResult.Cancel Then
-                    Continue For
+                If bCheckLabels Then
+                    frmConvertToNumeric.SetDataFrameName(GetCurrentDataFrameFocus().strName)
+                    frmConvertToNumeric.SetColumnName(strColumn)
+                    frmConvertToNumeric.CheckLabels(bCheckLabels)
+                    frmConvertToNumeric.SetNonNumeric(iNonNumericValues)
+                    frmConvertToNumeric.ShowDialog()
+                    ' Yes for "normal" convert and No for "labelled" convert
+                    Select Case frmConvertToNumeric.DialogResult
+                        Case DialogResult.Yes
+                            GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, True)
+                        Case DialogResult.No
+                            GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, False)
+                        Case DialogResult.Cancel
+                            Continue For
+                    End Select
+                Else
+                    frmConvertToNumeric.SetDataFrameName(GetCurrentDataFrameFocus().strName)
+                    frmConvertToNumeric.SetColumnName(strColumn)
+                    frmConvertToNumeric.CheckLabels(bCheckLabels)
+                    frmConvertToNumeric.SetNonNumeric(iNonNumericValues)
+                    frmConvertToNumeric.ShowDialog()
+                    ' Yes for "normal" convert and No for "ordinal" convert
+                    Select Case frmConvertToNumeric.DialogResult
+                        Case DialogResult.Yes
+                            GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, True)
+                        Case DialogResult.No
+                            GetCurrentDataFrameFocus().clsPrepareFunctions.ConvertToNumeric(strColumn, False)
+                        Case DialogResult.Cancel
+                            Continue For
+                    End Select
                 End If
                 frmConvertToNumeric.Close()
             End If
@@ -703,34 +847,20 @@ Public Class ucrDataView
         HideOrShowRecentSection()
     End Sub
 
-    ''' <summary>
-    ''' toggles startup menu items visibility
-    ''' </summary>
-    ''' <param name="bVisibility"></param>
-    Public Sub StartupMenuItemsVisibility(bVisibility As Boolean)
-        panelSectionStart.Visible = bVisibility
-        panelSectionHelp.Visible = bVisibility
-        If bVisibility Then
-            HideOrShowRecentSection()
-        Else
-            panelSectionRecent.Visible = False
-        End If
-    End Sub
-
     Private Sub HideOrShowRecentSection()
         panelSectionRecent.Visible = panelRecentMenuItems.Controls.Count > 0
     End Sub
 
-    Private Sub linkHelpIntroduction_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkHelpIntroduction.LinkClicked
+    Private Sub linkHelpIntroduction_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs)
         Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "0")
     End Sub
 
-    Private Sub linkHelpRpackages_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkHelpRpackages.LinkClicked
+    Private Sub linkHelpRpackages_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs)
         dlgHelpVignettes.ShowDialog()
     End Sub
 
-    Private Sub linkHelpRInstatWebsite_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkHelpRInstatWebsite.LinkClicked
-        Process.Start("http://r-instat.org/")
+    Private Sub linkHelpRInstatWebsite_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkHelpRInstatResourcesSite.LinkClicked
+        Process.Start("https://ecampus.r-instat.org/course/view.php?id=14")
     End Sub
 
     Private Sub rowContextMenuStrip_Opening(sender As Object, e As CancelEventArgs) Handles rowContextMenuStrip.Opening
@@ -754,31 +884,17 @@ Public Class ucrDataView
         dlgAddComment.ShowDialog()
     End Sub
 
-    Private Sub mnuPaste_Click(sender As Object, e As EventArgs) Handles mnuPaste.Click
-        PasteValuesToDataFrame()
-    End Sub
-
-    '''' <summary>
-    '''' event raised on menu toolstrip click
-    '''' paste data starting from selected cells
-    '''' </summary>
-    '''' <param name="sender"></param>
-    '''' <param name="e"></param>
-    Private Sub mnuCellPasteRange_Click(sender As Object, e As EventArgs) Handles mnuCellPasteRange.Click
-        PasteValuesToDataFrame()
-    End Sub
-
     ''' <summary>
     ''' pastes data from clipboard to data view
     ''' </summary>
-    Private Sub PasteValuesToDataFrame()
+    Public Sub PasteValuesToDataFrame()
         Dim strClipBoardText As String = My.Computer.Clipboard.GetText
         If String.IsNullOrEmpty(strClipBoardText) Then
-            MsgBox("No data available for pasting.", MsgBoxStyle.Information, "No Data")
+            MsgBoxTranslate("No data available for pasting.", MsgBoxStyle.Information, "No Data")
             Exit Sub
         End If
         'warn user action cannot be undone
-        If DialogResult.No = MsgBox("Are you sure you want to paste to these column(s)?" & Environment.NewLine &
+        If DialogResult.No = MsgBoxTranslate("Are you sure you want to paste to these column(s)?" & Environment.NewLine &
                             "This action cannot be undone.", MessageBoxButtons.YesNo, "Paste Data") Then
             Exit Sub
         End If
@@ -867,13 +983,14 @@ Public Class ucrDataView
     End Sub
 
     Private Sub DeleteCell_Click()
-        Dim deleteCell = MsgBox("This will replace the selected cells with missing values (NA)." &
+        Dim deleteCell = MsgBoxTranslate("This will replace the selected cells with missing values (NA)." &
                                 Environment.NewLine & "Continue?",
                                 MessageBoxButtons.YesNo, "Delete Cells")
         If deleteCell = DialogResult.Yes Then
             StartWait()
             GetCurrentDataFrameFocus().clsPrepareFunctions.DeleteCells(GetSelectedRows(), GetSelectedColumnIndexes())
             EndWait()
+            _grid.Focus()
         End If
     End Sub
 
@@ -882,6 +999,181 @@ Public Class ucrDataView
     End Sub
 
     Private Sub mnuHelp_Click(sender As Object, e As EventArgs) Handles mnuHelp.Click, mnuHelp1.Click, mnuHelp2.Click, mnuHelp3.Click
-        Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "146")
+        Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "697")
     End Sub
+
+    Public Sub GoToSpecificRowPage(iPage As Integer)
+        GetCurrentDataFrameFocus().clsVisibleDataFramePage.GoToSpecificRowPage(iPage)
+        RefreshWorksheet(_grid.CurrentWorksheet, GetCurrentDataFrameFocus())
+    End Sub
+
+    Private Sub lblRowDisplay_Click(sender As Object, e As EventArgs) Handles lblRowDisplay.Click
+        If lblRowNext.Enabled OrElse lblRowBack.Enabled Then
+            sdgWindowNumber.enumWINNUMBERMode = sdgWindowNumber.WINNUMBERMode.Row
+            Dim iTotalRow As Integer
+            If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bFilterApplied Then
+                iTotalRow = GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iFilteredRowCount
+            Else
+                iTotalRow = GetCurrentDataFrameFocus().iTotalRowCount
+            End If
+            sdgWindowNumber.iTotalRowOrColumn = iTotalRow
+            sdgWindowNumber.iEndRowOrColumn = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndRow
+            sdgWindowNumber.ShowDialog()
+
+            GoToSpecificRowPage(sdgWindowNumber.iPage)
+        End If
+    End Sub
+
+    Public Sub GoToSpecificColumnPage(iPage As Integer)
+        GetCurrentDataFrameFocus().clsVisibleDataFramePage.GoToSpecificColumnPage(iPage)
+        RefreshWorksheet(_grid.CurrentWorksheet, GetCurrentDataFrameFocus())
+    End Sub
+
+    Private Sub lblColDisplay_Click(sender As Object, e As EventArgs) Handles lblColDisplay.Click
+        If lblColNext.Enabled OrElse lblColBack.Enabled Then
+            sdgWindowNumber.enumWINNUMBERMode = sdgWindowNumber.WINNUMBERMode.Col
+            Dim iTotalCol As Integer
+            If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bColumnSelectionApplied Then
+                iTotalCol = GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iSelectedColumnCount
+            Else
+                iTotalCol = GetCurrentDataFrameFocus().iTotalColumnCount
+            End If
+            sdgWindowNumber.iTotalRowOrColumn = iTotalCol
+            sdgWindowNumber.iEndRowOrColumn = GetCurrentDataFrameFocus().clsVisibleDataFramePage.intEndColumn
+            sdgWindowNumber.ShowDialog()
+            GoToSpecificColumnPage(sdgWindowNumber.iPage)
+        End If
+    End Sub
+
+    Private Sub lblRowDisplay_MouseHover(sender As Object, e As EventArgs) Handles lblRowDisplay.MouseHover
+        If lblRowNext.Enabled OrElse lblRowBack.Enabled Then
+            Dim iTotalRow As Integer
+            If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bFilterApplied Then
+                iTotalRow = GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iFilteredRowCount
+            Else
+                iTotalRow = GetCurrentDataFrameFocus().iTotalRowCount
+            End If
+            ttGoToRowOrColPage.SetToolTip(lblRowDisplay, GetTranslation("Click to go to a specific window 1-") &
+                    Math.Ceiling(CDbl(iTotalRow / frmMain.clsInstatOptions.iMaxRows)))
+        Else
+            ttGoToRowOrColPage.RemoveAll()
+        End If
+    End Sub
+
+    Private Sub lblColDisplay_MouseHover(sender As Object, e As EventArgs) Handles lblColDisplay.MouseHover
+        If lblColNext.Enabled OrElse lblColBack.Enabled Then
+            Dim iTotalCol As Integer
+            If GetCurrentDataFrameFocus().clsFilterOrColumnSelection.bColumnSelectionApplied Then
+                iTotalCol = GetCurrentDataFrameFocus().clsFilterOrColumnSelection.iSelectedColumnCount
+            Else
+                iTotalCol = GetCurrentDataFrameFocus().iTotalColumnCount
+            End If
+            ttGoToRowOrColPage.SetToolTip(lblColDisplay, GetTranslation("Click to go to a specific window 1-") &
+                    Math.Ceiling(CDbl(iTotalCol / frmMain.clsInstatOptions.iMaxCols)))
+        Else
+            ttGoToRowOrColPage.RemoveAll()
+        End If
+    End Sub
+
+    Private Sub EditCell()
+        dlgEdit.SetCurrentDataframe(GetCurrentDataFrameNameFocus)
+        dlgEdit.SetCurrentColumn(GetFirstSelectedColumnName(), _grid.GetCellValue(GetFirstSelectedRow() - 1, GetFirstSelectedColumnName), GetFirstSelectedRow())
+        dlgEdit.ShowDialog()
+    End Sub
+
+    Private Sub mnuEditCell_Click(sender As Object, e As EventArgs) Handles mnuEditCell.Click
+        EditCell()
+    End Sub
+
+    Public Sub FindRow()
+        dlgFindInVariableOrFilter.ShowDialog()
+    End Sub
+
+    Public Sub Undo()
+        If frmMain.clsInstatOptions.bSwitchOffUndo Then
+            ' Show a message box indicating that undo is turned off
+            MsgBoxTranslate("Undo is turned off, go to Tools > Options to turn it on.", vbInformation, "Undo Disabled")
+            Exit Sub
+        End If
+
+        If _clsDataBook.DataFrames.Count > 0 Then
+            If (GetCurrentDataFrameFocus().iTotalColumnCount >= frmMain.clsInstatOptions.iUndoColLimit) OrElse
+   (GetCurrentDataFrameFocus().iTotalRowCount >= frmMain.clsInstatOptions.iUndoRowLimit) Then
+
+                ' Retrieve the default limits for rows and columns
+                Dim colLimit As Integer = frmMain.clsInstatOptions.iUndoColLimit
+                Dim rowLimit As Integer = frmMain.clsInstatOptions.iUndoRowLimit
+
+                ' Construct the concise message
+                Dim msg As String = "The current data frame exceeds the undo limit (Columns: " & colLimit & ", Rows: " & rowLimit & ")."
+
+                ' Append information on whether it's the rows, columns, or both
+                If GetCurrentDataFrameFocus().iTotalColumnCount >= colLimit AndAlso
+           GetCurrentDataFrameFocus().iTotalRowCount >= rowLimit Then
+                    msg &= " Both columns and rows exceed the limit."
+                ElseIf GetCurrentDataFrameFocus().iTotalColumnCount >= colLimit Then
+                    msg &= " Columns exceed the limit."
+                ElseIf GetCurrentDataFrameFocus().iTotalRowCount >= rowLimit Then
+                    msg &= " Rows exceed the limit."
+                End If
+
+                msg &= " Please go to Tools > Options to adjust the limits."
+
+                ' Display the message box
+                MsgBoxTranslate(msg, vbExclamation, "Undo Limit Exceeded")
+
+                Exit Sub
+            End If
+
+
+            If GetCurrentDataFrameFocus.clsVisibleDataFramePage.HasUndoHistory Then
+                GetCurrentDataFrameFocus.clsVisibleDataFramePage.Undo()
+            End If
+        End If
+    End Sub
+
+    Public Sub SearchRowInGrid(rowNumbers As List(Of Integer), strColumn As String, Optional iRow As Integer = 0,
+                           Optional bApplyToRows As Boolean = False)
+        _grid.SearchRowInGrid(rowNumbers, strColumn, iRow, bApplyToRows)
+    End Sub
+
+    Public Sub SelectColumnInGrid(strColumn As String)
+        _grid.SelectColumnInGrid(strColumn)
+    End Sub
+
+    Private Sub linkHelpGettingStarted_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkHelpGettingStarted.LinkClicked
+        Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "3")
+    End Sub
+
+    Private Sub linkHelpData_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkHelpData.LinkClicked
+        Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "71")
+    End Sub
+
+    Private Sub linkHelpPrepareMenu_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs)
+        Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "9")
+    End Sub
+
+    Private Sub linkHelpClimaticMenu_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs)
+        Help.ShowHelp(frmMain, frmMain.strStaticPath & "/" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "19")
+    End Sub
+
+    Private Sub linkStartPasteScriptfromClipboard_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkStartPasteScriptfromClipboard.LinkClicked
+        frmMain.mnuViewSwapDataAndMetadata.Enabled = frmMain.mnuViewSwapDataAndScript.Checked
+        frmMain.mnuViewSwapDataAndScript.Checked = Not frmMain.mnuViewSwapDataAndScript.Checked
+        frmMain.UpdateSwapDataAndScript()
+        frmMain.UpdateLayout()
+    End Sub
+
+    Private Sub linkStartRestoreBackup_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkStartRestoreBackup.LinkClicked
+        dlgRestoreBackup.ShowDialog()
+    End Sub
+
+    Private Sub linkStartAddRPackage_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkStartAddRPackage.LinkClicked
+        dlgInstallRPackage.ShowDialog()
+    End Sub
+
+    Private Sub linkStartPasteData_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles linkStartPasteData.LinkClicked
+        dlgPasteNewColumns.ShowDialog()
+    End Sub
+
 End Class

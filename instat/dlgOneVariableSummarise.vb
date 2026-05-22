@@ -11,22 +11,31 @@
 ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ' GNU General Public License for more details.
 '
-' You should have received a copy of the GNU General Public License 
+' You should have received a copy of the GNU General Public License
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 Imports instat
 Imports instat.Translations
 
 Public Class dlgOneVariableSummarise
+    Public enumOnevariableMode As String = OnevariableMode.Prepare
+    Public Enum OnevariableMode
+        Prepare
+        Describe
+        Climatic
+        Tricot
+    End Enum
+
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
     Private bRCodeSet As Boolean = True
-    Private clsSummaryFunction, clsSummariesList, clsMmtableFunction,
-        clsConcFunction, clsSummaryTableFunction, clsHeaderLeftTopVariableFunction,
-                clsHeaderLeftTopSummaryFunction, clsHeaderTopLeftVariableFunction,
-                clsHeaderTopLeftSummaryFunction, clsDummyFunction As New RFunction
-    Private clsMmtableOperator As ROperator
+    Private clsSummaryFunction, clsSummariesList, clsGtFunction,
+        clsConcFunction, clsSummaryTableFunction, clsDummyFunction,
+        clsSkimrFunction, clsPivotWiderFunction As New RFunction
+
+    Private clsPipeOperator, clsJoiningPipeOperator As New ROperator
+    Private clsSummaryOperator As New ROperator
     Private bResetSubdialog As Boolean = False
+    Private bResetFormatSubdialog As Boolean = False
     Public strDefaultDataFrame As String = ""
     Public strDefaultColumns() As String = Nothing
 
@@ -39,6 +48,7 @@ Public Class dlgOneVariableSummarise
             SetDefaults()
         End If
         SetRCodeForControls(bReset)
+        SetHelpOptions()
         SetDefaultColumn()
         bReset = False
         TestOKEnabled()
@@ -46,27 +56,33 @@ Public Class dlgOneVariableSummarise
     End Sub
 
     Private Sub InitialiseDialog()
-        ucrBase.iHelpTopicID = 410
+        ucrBase.iHelpTopicID = 735
         ucrBase.clsRsyntax.iCallType = 2
+        ucrBase.clsRsyntax.bExcludeAssignedFunctionOutput = False
+
+        Dim dctDisplayMissing As New Dictionary(Of String, String)
+
         'The selector is only used for one of the functions. Therefore it's parameter name is always the same. So this can be done in Initialise.
         ucrSelectorOneVarSummarise.SetParameter(New RParameter("data_name", 0))
         ucrSelectorOneVarSummarise.SetParameterIsString()
 
-        ucrReceiverOneVarSummarise.SetParameter(New RParameter("object", 0))
+        ucrReceiverOneVarSummarise.SetParameter(New RParameter("object", 1))
         ucrReceiverOneVarSummarise.SetParameterIsRFunction()
         ucrReceiverOneVarSummarise.Selector = ucrSelectorOneVarSummarise
         ucrReceiverOneVarSummarise.SetMeAsReceiver()
 
         ucrNudMaxSum.SetParameter(New RParameter("maxsum", 2))
-        ucrNudMaxSum.SetRDefault("7")
+        ucrNudMaxSum.SetMinMax(1, 100)
         ucrNudMaxSum.SetLinkedDisplayControl(lblMaxSum)
 
         ucrPnlSummaries.AddRadioButton(rdoDefault)
         ucrPnlSummaries.AddRadioButton(rdoCustomised)
+        ucrPnlSummaries.AddRadioButton(rdoSkim)
         ucrPnlSummaries.AddParameterValuesCondition(rdoCustomised, "checked_radio", "customised")
         ucrPnlSummaries.AddParameterValuesCondition(rdoDefault, "checked_radio", "defaults")
+        ucrPnlSummaries.AddParameterValuesCondition(rdoSkim, "checked_radio", "skim")
         ucrPnlSummaries.AddToLinkedControls(ucrNudMaxSum, {rdoDefault}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True)
-        ucrPnlSummaries.AddToLinkedControls({ucrChkOmitMissing, ucrChkDisplaySummariesAsRows, ucrChkDisplayVariablesAsRows, ucrChkDisplayMargins},
+        ucrPnlSummaries.AddToLinkedControls({ucrChkOmitMissing, ucrPnlColumnFactor, ucrReorderSummary, ucrChkDisplayMissing},
                                             {rdoCustomised}, bNewLinkedHideIfParameterMissing:=True)
 
         ucrChkOmitMissing.SetParameter(New RParameter("na.rm", 3))
@@ -74,23 +90,36 @@ Public Class dlgOneVariableSummarise
         ucrChkOmitMissing.SetRDefault("FALSE")
         ucrChkOmitMissing.SetValuesCheckedAndUnchecked("TRUE", "FALSE")
         ucrChkOmitMissing.bUpdateRCodeFromControl = True
+        ucrChkOmitMissing.SetLinkedDisplayControl(cmdMissingOptions)
 
-        ucrChkDisplayMargins.SetParameter(New RParameter("include_margins", 3))
-        ucrChkDisplayMargins.SetText("Display Outer Margins")
-        ucrChkDisplayMargins.SetRDefault("FALSE")
-        ucrChkDisplayMargins.AddToLinkedControls({ucrInputMarginName}, {True}, bNewLinkedAddRemoveParameter:=True, bNewLinkedUpdateFunction:=True,
-                                                 bNewLinkedHideIfParameterMissing:=True, bNewLinkedChangeToDefaultState:=True, objNewDefaultState:="All")
+        ucrPnlColumnFactor.AddRadioButton(rdoSummary)
+        ucrPnlColumnFactor.AddRadioButton(rdoVariable)
+        ucrPnlColumnFactor.AddRadioButton(rdoNoColumnFactor)
+        ucrPnlColumnFactor.AddParameterValuesCondition(rdoNoColumnFactor, "factor_cols", "NoColFactor")
+        ucrPnlColumnFactor.AddParameterValuesCondition(rdoSummary, "factor_cols", "Sum")
+        ucrPnlColumnFactor.AddParameterValuesCondition(rdoVariable, "factor_cols", "Var")
+        ucrPnlColumnFactor.SetLinkedDisplayControl(grpColumns)
 
-        ucrInputMarginName.SetParameter(New RParameter("margin_name", iNewPosition:=4))
-        ucrInputMarginName.SetLinkedDisplayControl(lblMarginName)
+        ucrChkDisplayMissing.SetText("Display Missing")
+        ucrChkDisplayMissing.AddParameterValuesCondition(True, "checked", "TRUE")
+        ucrChkDisplayMissing.AddParameterValuesCondition(False, "checked", "FALSE")
 
-        ucrChkDisplaySummariesAsRows.SetText("Display Summaries As Rows")
-        ucrChkDisplaySummariesAsRows.AddParameterValuesCondition(True, "summary_by_row", "TRUE")
-        ucrChkDisplaySummariesAsRows.AddParameterValuesCondition(False, "summary_by_row", "FALSE")
+        ucrInputDisplayMissing.SetParameter(New RParameter("na_display", 6))
+        dctDisplayMissing.Add("NA", "NA")
+        dctDisplayMissing.Add("(blank)", " ")
+        dctDisplayMissing.Add(".", Chr(34) & "." & Chr(34))
+        dctDisplayMissing.Add("...", Chr(34) & "..." & Chr(34))
+        dctDisplayMissing.Add("---", Chr(34) & "---" & Chr(34))
+        ucrInputDisplayMissing.SetItems(dctDisplayMissing)
+        ucrInputDisplayMissing.SetDropDownStyleAsEditable(bAdditionsAllowed:=True)
+        ucrChkDisplayMissing.AddToLinkedControls({ucrInputDisplayMissing}, {True}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True,
+                                                 bNewLinkedChangeToDefaultState:=True, objNewDefaultState:="NA")
 
-        ucrChkDisplayVariablesAsRows.SetText("Display Variables As Rows")
-        ucrChkDisplayVariablesAsRows.AddParameterValuesCondition(True, "variable_by_row", "TRUE")
-        ucrChkDisplayVariablesAsRows.AddParameterPresentCondition(False, "variable_by_row", "FALSE")
+        ucrSaveSummary.SetPrefix("summary_table")
+        ucrSaveSummary.SetDataFrameSelector(ucrSelectorOneVarSummarise.ucrAvailableDataFrames)
+        ucrSaveSummary.SetIsComboBox()
+
+        ucrReorderSummary.bDataIsSummaries = True
     End Sub
 
     Private Sub SetDefaults()
@@ -98,63 +127,75 @@ Public Class dlgOneVariableSummarise
         clsSummaryFunction = New RFunction
         clsConcFunction = New RFunction
         clsSummaryTableFunction = New RFunction
-        clsMmtableOperator = New ROperator
-        clsMmtableFunction = New RFunction
-        clsHeaderLeftTopVariableFunction = New RFunction
-        clsHeaderLeftTopSummaryFunction = New RFunction
-        clsHeaderTopLeftVariableFunction = New RFunction
-        clsHeaderTopLeftSummaryFunction = New RFunction
+        clsGtFunction = New RFunction
         clsDummyFunction = New RFunction
+        clsSkimrFunction = New RFunction
+        clsPivotWiderFunction = New RFunction
+
+        clsPipeOperator = New ROperator
+
+        clsSummaryOperator = New ROperator
 
         ucrSelectorOneVarSummarise.Reset()
-        ucrBase.clsRsyntax.lstBeforeCodes.Clear()
 
-        'Dummy function used t set conditions for the summary and variable checkbox
-        clsDummyFunction.AddParameter("variable_by_row", "TRUE", iPosition:=0)
-        clsDummyFunction.AddParameter("summary_by_row", "FALSE", iPosition:=1)
-        clsDummyFunction.AddParameter("checked_radio", "defaults", iPosition:=2)
+        clsPipeOperator.SetOperation("%>%")
+        clsPipeOperator.bBrackets = False
+
+        clsSkimrFunction.SetPackageName("skimr")
+        clsSkimrFunction.SetRCommand("skim_without_charts")
+        clsSkimrFunction.AddParameter("data", clsRFunctionParameter:=ucrSelectorOneVarSummarise.ucrAvailableDataFrames.clsCurrDataFrame, iPosition:=0)
+        clsSkimrFunction.SetAssignToOutputObject(strRObjectToAssignTo:="last_summary",
+                                            strRObjectTypeLabelToAssignTo:=RObjectTypeLabel.Summary,
+                                            strRObjectFormatToAssignTo:=RObjectFormat.Text,
+                                            strRDataFrameNameToAddObjectTo:=ucrSelectorOneVarSummarise.strCurrentDataFrame,
+                                            strObjectName:="last_summary")
+
+        'Dummy function used to set conditions
+        clsDummyFunction.AddParameter("checked_radio", "defaults", iPosition:=0)
+        clsDummyFunction.AddParameter("factor_cols", "Sum", iPosition:=1)
+        clsDummyFunction.AddParameter("checked", "FALSE", iPosition:=2)
+        clsDummyFunction.AddParameter("theme", "select", iPosition:=11)
 
         clsConcFunction.SetRCommand("c")
 
-        clsMmtableOperator.SetOperation("+")
-        clsMmtableOperator.AddParameter("mmtable_function", clsRFunctionParameter:=clsMmtableFunction, iPosition:=0)
-        clsMmtableOperator.AddParameter("header_left_top_variable", clsRFunctionParameter:=clsHeaderLeftTopVariableFunction, iPosition:=1)
-        clsMmtableOperator.AddParameter("header_top_left_summary", clsRFunctionParameter:=clsHeaderTopLeftSummaryFunction, iPosition:=2)
+        clsPivotWiderFunction.SetRCommand("pivot_wider")
+        clsPivotWiderFunction.AddParameter("values_from", "value", iPosition:=1)
 
-        clsHeaderLeftTopVariableFunction.SetPackageName("mmtable2")
-        clsHeaderLeftTopVariableFunction.SetRCommand("header_left_top")
-        clsHeaderLeftTopVariableFunction.AddParameter("variable", Chr(39) & "variable" & Chr(39), iPosition:=0)
+        clsGtFunction.SetPackageName("gt")
+        clsGtFunction.SetRCommand("gt")
 
-        clsHeaderLeftTopSummaryFunction.SetPackageName("mmtable2")
-        clsHeaderLeftTopSummaryFunction.SetRCommand("header_left_top")
-        clsHeaderLeftTopSummaryFunction.AddParameter("variable", Chr(39) & "summary" & Chr(39), iPosition:=0)
+        clsSummaryOperator.SetOperation("%>%")
+        clsSummaryOperator.AddParameter("tableFun", clsRFunctionParameter:=clsSummaryTableFunction, iPosition:=0)
+        clsSummaryOperator.AddParameter(strParameterName:="gt_tbl", clsRFunctionParameter:=clsGtFunction, iPosition:=2, bIncludeArgumentName:=False)
 
-        clsHeaderTopLeftVariableFunction.SetPackageName("mmtable2")
-        clsHeaderTopLeftVariableFunction.SetRCommand("header_top_left")
-        clsHeaderTopLeftVariableFunction.AddParameter("variable", Chr(39) & "variable" & Chr(39), iPosition:=0)
 
-        clsHeaderTopLeftSummaryFunction.SetPackageName("mmtable2")
-        clsHeaderTopLeftSummaryFunction.SetRCommand("header_top_left")
-        clsHeaderTopLeftSummaryFunction.AddParameter("variable", Chr(39) & "summary" & Chr(39), iPosition:=0)
-
-        clsMmtableFunction.SetPackageName("mmtable2")
-        clsMmtableFunction.SetRCommand("mmtable")
-        clsMmtableFunction.AddParameter("data", clsRFunctionParameter:=clsSummaryTableFunction, iPosition:=0)
-        clsMmtableFunction.AddParameter("cells", "value", iPosition:=1)
+        clsJoiningPipeOperator.SetOperation("%>%")
+        clsJoiningPipeOperator.AddParameter("mutable", clsROperatorParameter:=clsSummaryOperator, iPosition:=0)
+        clsJoiningPipeOperator.SetAssignToOutputObject(strRObjectToAssignTo:="last_table",
+                                               strRObjectTypeLabelToAssignTo:=RObjectTypeLabel.Table,
+                                               strRObjectFormatToAssignTo:=RObjectFormat.Html,
+                                               strRDataFrameNameToAddObjectTo:=ucrSelectorOneVarSummarise.strCurrentDataFrame,
+                                               strObjectName:="last_table")
 
         clsSummariesList.SetRCommand("c")
-        clsSummariesList.AddParameter("summary_count_non_missing", Chr(34) & "summary_count_non_missing" & Chr(34), bIncludeArgumentName:=False)
         clsSummariesList.AddParameter("summary_count", Chr(34) & "summary_count" & Chr(34), bIncludeArgumentName:=False)
+        clsSummariesList.AddParameter("summary_count_all", Chr(34) & "summary_count_all" & Chr(34), bIncludeArgumentName:=False)
         clsSummariesList.AddParameter("summary_sum", Chr(34) & "summary_sum" & Chr(34), bIncludeArgumentName:=False)
 
         clsSummaryFunction.SetRCommand("summary")
-        clsSummaryFunction.AddParameter("maxsum", 7)
+        clsSummaryFunction.AddParameter("maxsum", "12", iPosition:=2)
+        clsSummaryFunction.AddParameter("data", clsRFunctionParameter:=ucrSelectorOneVarSummarise.ucrAvailableDataFrames.clsCurrDataFrame, iPosition:=0)
         clsSummaryFunction.AddParameter("na.rm", "FALSE", iPosition:=3)
+        clsSummaryFunction.SetAssignToOutputObject(strRObjectToAssignTo:="last_summary",
+                                                   strRObjectTypeLabelToAssignTo:=RObjectTypeLabel.Summary,
+                                                   strRObjectFormatToAssignTo:=RObjectFormat.Text,
+                                                   strRDataFrameNameToAddObjectTo:=ucrSelectorOneVarSummarise.strCurrentDataFrame,
+                                                   strObjectName:="last_summary")
 
         clsSummaryTableFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$summary_table")
-        clsSummaryTableFunction.AddParameter("treat_columns_as_factor", "TRUE", iPosition:=0)
-        clsSummaryTableFunction.AddParameter("margins", Chr(34) & "summary" & Chr(34), iPosition:=1)
-        clsSummaryTableFunction.AddParameter("summaries", clsRFunctionParameter:=clsSummariesList, iPosition:=2)
+        clsSummaryTableFunction.AddParameter("treat_columns_as_factor", "TRUE", iPosition:=1)
+        clsSummaryTableFunction.AddParameter("margins", Chr(34) & "summary" & Chr(34), iPosition:=2)
+        clsSummaryTableFunction.AddParameter("summaries", clsRFunctionParameter:=clsSummariesList, iPosition:=5)
         clsSummaryTableFunction.SetAssignTo("summary_table")
 
         ucrBase.clsRsyntax.SetBaseRFunction(clsSummaryFunction)
@@ -164,20 +205,28 @@ Public Class dlgOneVariableSummarise
     Private Sub SetRCodeForControls(bReset As Boolean)
         bRCodeSet = False
         ucrChkOmitMissing.AddAdditionalCodeParameterPair(clsSummaryTableFunction, New RParameter("na.rm", iNewPosition:=2), iAdditionalPairNo:=1)
-        ucrNudMaxSum.SetRCode(clsSummaryFunction, bReset)
-        ucrReceiverOneVarSummarise.SetRCode(clsSummaryFunction, bReset)
+        ucrSaveSummary.AddAdditionalRCode(clsSummaryFunction, iAdditionalPairNo:=1)
+        ucrSaveSummary.AddAdditionalRCode(clsJoiningPipeOperator, iAdditionalPairNo:=2)
+        ucrReceiverOneVarSummarise.AddAdditionalCodeParameterPair(clsSummaryFunction, New RParameter("object", iNewPosition:=2), iAdditionalPairNo:=1)
         ucrChkOmitMissing.SetRCode(clsSummaryFunction, bReset)
-        ucrChkDisplayMargins.SetRCode(clsSummaryTableFunction, bReset)
+
         ucrPnlSummaries.SetRCode(clsDummyFunction, bReset)
         ucrSelectorOneVarSummarise.SetRCode(clsSummaryTableFunction, bReset)
-        ucrChkDisplayVariablesAsRows.SetRCode(clsDummyFunction, bReset)
-        ucrChkDisplaySummariesAsRows.SetRCode(clsDummyFunction, bReset)
+        ucrInputDisplayMissing.SetRCode(clsSummaryTableFunction, bReset)
+        ucrSaveSummary.SetRCode(clsSkimrFunction, bReset)
+
+        If bReset Then
+            ucrChkDisplayMissing.SetRCode(clsDummyFunction, bReset)
+            ucrPnlColumnFactor.SetRCode(clsDummyFunction, bReset)
+            ucrNudMaxSum.SetRCode(clsSummaryFunction, bReset)
+        End If
         bRCodeSet = True
+        FillListView()
     End Sub
 
     Public Sub TestOKEnabled()
         'We cannot test the values on the sub dialog because the sub dialog may not be in sync with the main dialog code. This only happens once the sub dialog has been opened.
-        If ucrReceiverOneVarSummarise.IsEmpty() OrElse (rdoCustomised.Checked AndAlso clsSummariesList.clsParameters.Count = 0) OrElse ucrNudMaxSum.GetText = "" Then
+        If ucrReceiverOneVarSummarise.IsEmpty() OrElse (rdoCustomised.Checked AndAlso clsSummariesList.clsParameters.Count = 0) OrElse ucrNudMaxSum.GetText = "" OrElse Not ucrSaveSummary.IsComplete Then
             ucrBase.OKEnabled(False)
         Else
             ucrBase.OKEnabled(True)
@@ -196,15 +245,38 @@ Public Class dlgOneVariableSummarise
         sdgSummaries.bEnable2VariableTab = False
         sdgSummaries.ShowDialog()
         sdgSummaries.bEnable2VariableTab = True
+        FillListView()
         TestOKEnabled()
+    End Sub
+
+    Private Sub cmdMissingOptions_Click(sender As Object, e As EventArgs) Handles cmdMissingOptions.Click
+        sdgMissingOptions.SetRFunction(clsNewSummaryFunction:=clsSummaryTableFunction, clsNewConcFunction:=clsConcFunction, bReset:=bResetSubdialog)
+        bResetSubdialog = False
+        sdgMissingOptions.ShowDialog()
     End Sub
 
     Private Sub ucrReceiverDescribeOneVar_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrReceiverOneVarSummarise.ControlValueChanged
         If Not ucrReceiverOneVarSummarise.IsEmpty Then
             clsSummaryTableFunction.AddParameter("columns_to_summarise", ucrReceiverOneVarSummarise.GetVariableNames(), iPosition:=4)
+            clsSkimrFunction.AddParameter("col_names", ucrReceiverOneVarSummarise.GetVariableNames(),
+                                          bIncludeArgumentName:=False, iPosition:=1)
         Else
             clsSummaryTableFunction.RemoveParameterByName("columns_to_summarise")
+            clsSkimrFunction.RemoveParameterByName("col_names")
         End If
+    End Sub
+
+    Private Sub SetHelpOptions()
+        Select Case enumOnevariableMode
+            Case OnevariableMode.Prepare
+                ucrBase.iHelpTopicID = 550
+            Case OnevariableMode.Describe
+                ucrBase.iHelpTopicID = 410
+            Case OnevariableMode.Climatic
+                ucrBase.iHelpTopicID = 615
+            Case OnevariableMode.Tricot
+                ucrBase.iHelpTopicID = 735
+        End Select
     End Sub
 
     Private Sub SetDefaultColumn()
@@ -220,55 +292,112 @@ Public Class dlgOneVariableSummarise
         strDefaultColumns = Nothing
     End Sub
 
-    Private Sub Controls_ControlContentsChanged(ucrChangedControl As ucrCore) Handles ucrReceiverOneVarSummarise.ControlContentsChanged, ucrNudMaxSum.ControlContentsChanged
-        TestOKEnabled()
+    Private Sub ucrSelectorOneVarSummarise_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrSelectorOneVarSummarise.ControlValueChanged
+        clsSkimrFunction.AddParameter("data", clsRFunctionParameter:=ucrSelectorOneVarSummarise.ucrAvailableDataFrames.clsCurrDataFrame, iPosition:=0)
+
+        clsSummaryFunction._strDataFrameNameToAddAssignToObject = ucrSelectorOneVarSummarise.strCurrentDataFrame
+        clsJoiningPipeOperator._strDataFrameNameToAddAssignToObject = ucrSelectorOneVarSummarise.strCurrentDataFrame
+        clsSkimrFunction._strDataFrameNameToAddAssignToObject = ucrSelectorOneVarSummarise.strCurrentDataFrame
+    End Sub
+
+    Private Sub ucrChkOmitMissing_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkOmitMissing.ControlValueChanged
+        If Not ucrChkOmitMissing.Checked Then
+            clsSummaryTableFunction.RemoveParameterByName("na_type")
+        Else
+            clsSummaryTableFunction.AddParameter("na_type", clsRFunctionParameter:=clsConcFunction, iPosition:=9)
+        End If
+        cmdMissingOptions.Enabled = ucrChkOmitMissing.Checked
     End Sub
 
     Private Sub ucrPnlSummaries_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrPnlSummaries.ControlValueChanged
         If rdoCustomised.Checked Then
-            clsDummyFunction.AddParameter("checked_radio", "customised", iPosition:=2)
-            ucrBase.clsRsyntax.SetBaseROperator(clsMmtableOperator)
-            cmdSummaries.Visible = True
-        Else
-            clsDummyFunction.AddParameter("checked_radio", "defaults", iPosition:=2)
+            clsDummyFunction.AddParameter("checked_radio", "customised", iPosition:=0)
+            ucrBase.clsRsyntax.SetBaseROperator(clsJoiningPipeOperator)
+            ucrSaveSummary.SetSaveType(RObjectTypeLabel.Table, strRObjectFormat:=RObjectFormat.Html)
+            ucrSaveSummary.SetAssignToIfUncheckedValue("last_table")
+            ucrSaveSummary.SetCheckBoxText("Store Table")
+        ElseIf rdoDefault.Checked Then
+            clsDummyFunction.AddParameter("checked_radio", "defaults", iPosition:=0)
             ucrBase.clsRsyntax.SetBaseRFunction(clsSummaryFunction)
-            cmdSummaries.Visible = False
+            ucrSaveSummary.SetSaveType(RObjectTypeLabel.Summary, strRObjectFormat:=RObjectFormat.Text)
+            ucrSaveSummary.SetAssignToIfUncheckedValue("last_summary")
+            ucrSaveSummary.SetCheckBoxText("Store Summary")
+        ElseIf rdoSkim.Checked Then
+            clsDummyFunction.AddParameter("checked_radio", "skim", iPosition:=0)
+            ucrBase.clsRsyntax.SetBaseRFunction(clsSkimrFunction)
+            ucrSaveSummary.SetSaveType(RObjectTypeLabel.Summary, strRObjectFormat:=RObjectFormat.Text)
+            ucrSaveSummary.SetAssignToIfUncheckedValue("last_summary")
+            ucrSaveSummary.SetCheckBoxText("Store Summary")
+        End If
+        cmdSummaries.Visible = rdoCustomised.Checked
+        cmdTableOptions.Visible = rdoCustomised.Checked
+        ConfigureColumnFactorsAndNames()
+    End Sub
+
+    Private Sub FillListView()
+        If clsSummariesList.clsParameters.Count > 0 Then
+            ucrReorderSummary.lstAvailableData.Clear()
+            ucrReorderSummary.lstAvailableData.Columns.Add("Summaries")
+            ucrReorderSummary.lstAvailableData.Columns(0).Width = -2
+            For i = 0 To clsSummariesList.clsParameters.Count - 1
+                clsSummariesList.clsParameters(i).Position = i
+                ucrReorderSummary.lstAvailableData.Items.Add(clsSummariesList.clsParameters(i).strArgumentName)
+            Next
+        Else
+            ucrReorderSummary.lstAvailableData.Items.Clear()
         End If
     End Sub
 
-    Private Sub ucrChkDisplayVariablesAsRows_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkDisplayVariablesAsRows.ControlValueChanged, ucrChkDisplaySummariesAsRows.ControlValueChanged
-        If bRCodeSet Then
-            clsMmtableOperator.RemoveParameterByName("header_left_top_variable")
-            clsMmtableOperator.RemoveParameterByName("header_top_left_summary")
-            clsMmtableOperator.RemoveParameterByName("header_left_top_summaries")
-            clsMmtableOperator.RemoveParameterByName("header_top_left_variable")
-            clsMmtableOperator.RemoveParameterByName("header_left_top_summary")
-            clsMmtableOperator.RemoveParameterByName("header_top__left_summary")
-            If ucrChkDisplaySummariesAsRows.Checked AndAlso ucrChkDisplayVariablesAsRows.Checked Then
-                clsMmtableOperator.AddParameter("header_left_top_variable", clsRFunctionParameter:=clsHeaderLeftTopVariableFunction, iPosition:=1)
-                clsMmtableOperator.AddParameter("header_left_top_summary", clsRFunctionParameter:=clsHeaderLeftTopSummaryFunction, iPosition:=2)
-            ElseIf ucrChkDisplayVariablesAsRows.Checked Then
-                clsMmtableOperator.AddParameter("header_left_top_variable", clsRFunctionParameter:=clsHeaderLeftTopVariableFunction, iPosition:=1)
-                clsMmtableOperator.AddParameter("header_top_left_summary", clsRFunctionParameter:=clsHeaderTopLeftSummaryFunction, iPosition:=2)
-            ElseIf ucrChkDisplaySummariesAsRows.Checked Then
-                clsMmtableOperator.AddParameter("header_left_top_summaries", clsRFunctionParameter:=clsHeaderLeftTopSummaryFunction, iPosition:=1)
-                clsMmtableOperator.AddParameter("header_top_left_variable", clsRFunctionParameter:=clsHeaderTopLeftVariableFunction, iPosition:=2)
-            Else
-                clsMmtableOperator.AddParameter("header_top_left_variable", clsRFunctionParameter:=clsHeaderTopLeftVariableFunction, iPosition:=1)
-                clsMmtableOperator.AddParameter("header_top__left_summary", clsRFunctionParameter:=clsHeaderTopLeftSummaryFunction, iPosition:=2)
-            End If
+    Private Sub ucrReorderSummary_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrReorderSummary.ControlValueChanged
+        Dim lstOrderedSummaries As New List(Of RParameter)
+        Dim iPosition As Integer = 0
+        For i = 0 To ucrReorderSummary.lstAvailableData.Items.Count - 1
+            lstOrderedSummaries.Add(clsSummariesList.GetParameter(ucrReorderSummary.lstAvailableData.Items(i).Text))
+        Next
 
-            If ucrChkDisplayVariablesAsRows.Checked Then
-                clsDummyFunction.AddParameter("variable_by_row", "TRUE", iPosition:=0)
-            Else
-                clsDummyFunction.AddParameter("variable_by_row", "FALSE", iPosition:=0)
-            End If
+        clsSummariesList.ClearParameters()
+        'Changing the parameter positions
+        For Each clsParameter In lstOrderedSummaries
+            clsParameter.Position = iPosition
+            clsSummariesList.AddParameter(clsParameter)
+            iPosition += 1
+        Next
+    End Sub
 
-            If ucrChkDisplaySummariesAsRows.Checked Then
-                clsDummyFunction.AddParameter("summary_by_row", "TRUE", iPosition:=1)
+    Private Sub cmdTableOptions_Click(sender As Object, e As EventArgs) Handles cmdTableOptions.Click
+        sdgTableOptions.Setup(ucrSelectorOneVarSummarise.strCurrentDataFrame, clsSummaryOperator, {EnumTableSubDialogTab.Header, EnumTableSubDialogTab.SourceNotes,
+                                  EnumTableSubDialogTab.Themes, EnumTableSubDialogTab.OtherStyle,
+                                  EnumTableSubDialogTab.Table})
+        sdgTableOptions.ShowDialog(Me)
+        bResetFormatSubdialog = False
+    End Sub
+
+    Private Sub Display_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrPnlColumnFactor.ControlValueChanged
+        ConfigureColumnFactorsAndNames()
+    End Sub
+
+    Private Sub ConfigureColumnFactorsAndNames()
+        If rdoCustomised.Checked Then
+            If rdoNoColumnFactor.Checked Then
+                clsSummaryOperator.RemoveParameterByName("col_factor")
+                clsDummyFunction.AddParameter("factor_cols", "NoColFactor", iPosition:=1)
             Else
-                clsDummyFunction.AddParameter("summary_by_row", "FALSE", iPosition:=1)
+                clsSummaryOperator.AddParameter("col_factor", clsRFunctionParameter:=clsPivotWiderFunction, iPosition:=1)
+                If rdoSummary.Checked Then
+                    clsDummyFunction.AddParameter("factor_cols", "Sum", iPosition:=1)
+                    clsPivotWiderFunction.AddParameter("names_from", "summary", iPosition:=0)
+                ElseIf rdoVariable.Checked Then
+                    clsDummyFunction.AddParameter("factor_cols", "Var", iPosition:=1)
+                    clsPivotWiderFunction.AddParameter("names_from", "variable", iPosition:=0)
+                End If
             End If
+        Else
+            clsSummaryOperator.RemoveParameterByName("col_factor")
+            clsPivotWiderFunction.RemoveParameterByName("names_from")
         End If
+    End Sub
+
+    Private Sub Controls_ControlContentsChanged(ucrChangedControl As ucrCore) Handles ucrReceiverOneVarSummarise.ControlContentsChanged, ucrNudMaxSum.ControlContentsChanged, ucrSaveSummary.ControlContentsChanged
+        TestOKEnabled()
     End Sub
 End Class

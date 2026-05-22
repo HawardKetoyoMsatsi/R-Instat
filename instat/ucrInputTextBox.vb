@@ -31,7 +31,7 @@ Public Class ucrInputTextBox
     End Sub
 
     Private Sub txtInput_KeyPress(sender As Object, e As KeyPressEventArgs) Handles txtInput.KeyPress
-        bUserTyped = True
+        bUserTyped = False
     End Sub
 
     Private Sub txtInput_Validating(sender As Object, e As CancelEventArgs) Handles txtInput.Validating
@@ -43,7 +43,7 @@ Public Class ucrInputTextBox
                 'TODO This message should contain the same message from ValidateText()
                 'Temp disabled so that change is done automatically
                 'TODO Think about more subtle ways to do this without being annoying to the user
-                'Select Case MsgBox(Chr(34) & strCurrent & Chr(34) & " is an invalid name." & Environment.NewLine & "Would you like it to be automatically corrected?", vbYesNo, "Invalid Name")
+                'Select Case MsgBoxTranslate(Chr(34) & strCurrent & Chr(34) & " is an invalid name." & Environment.NewLine & "Would you like it to be automatically corrected?", vbYesNo, "Invalid Name")
                 '    Case MsgBoxResult.Yes
                 '        SetName(frmMain.clsRLink.MakeValidText(strCurrent))
                 '    Case Else
@@ -61,7 +61,7 @@ Public Class ucrInputTextBox
         End If
     End Sub
 
-    Public Overrides Function GetText() As String
+    Public Overrides Function GetText(Optional enumTextType As [Enum] = Nothing) As String
         Return txtInput.Text
     End Function
 

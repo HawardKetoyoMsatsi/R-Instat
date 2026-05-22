@@ -14,6 +14,7 @@
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Imports instat.Translations
 Public Class ucrAdditionalLayers
     'Operator containing all parts of the ggplot command
     Public clsBaseOperator As ROperator
@@ -65,6 +66,80 @@ Public Class ucrAdditionalLayers
         Next
     End Sub
 
+    ' Enum for direction of movement
+    Private Enum Direction
+        Top
+        Up
+        Down
+        Bottom
+    End Enum
+
+    ' Method to reorder ListView items and keep lstLayerComplete in sync
+    Private Sub ReorderListViewItems(direction As Direction)
+        If lstLayers.SelectedItems.Count = 0 Then Return
+
+        Dim selectedIndex As Integer = lstLayers.SelectedIndices(0)
+        Dim item As ListViewItem = lstLayers.SelectedItems(0)
+        Dim layerComplete As Boolean = lstLayerComplete(selectedIndex)
+
+        lstLayers.Items.RemoveAt(selectedIndex)
+        lstLayerComplete.RemoveAt(selectedIndex)
+
+        Dim newIndex As Integer = selectedIndex
+
+        Select Case direction
+            Case Direction.Top
+                newIndex = 0
+            Case Direction.Up
+                newIndex = Math.Max(0, selectedIndex - 1)
+            Case Direction.Down
+                newIndex = Math.Min(lstLayers.Items.Count, selectedIndex + 1)
+            Case Direction.Bottom
+                newIndex = lstLayers.Items.Count
+        End Select
+
+        lstLayers.Items.Insert(newIndex, item)
+        lstLayerComplete.Insert(newIndex, layerComplete)
+        lstLayers.Items(newIndex).Selected = True
+        lstLayers.Select()
+        SyncLayerOrderWithOperator()
+    End Sub
+
+
+    Private Sub cmdUp_Click(sender As Object, e As EventArgs) Handles cmdUp.Click
+        ReorderListViewItems(Direction.Up)
+    End Sub
+
+    Private Sub cmdTop_Click(sender As Object, e As EventArgs) Handles cmdTop.Click
+        ReorderListViewItems(Direction.Top)
+    End Sub
+
+    Private Sub cmdDown_Click(sender As Object, e As EventArgs) Handles cmdDown.Click
+        ReorderListViewItems(Direction.Down)
+    End Sub
+
+    Private Sub cmdBottom_Click(sender As Object, e As EventArgs) Handles cmdBottom.Click
+        ReorderListViewItems(Direction.Bottom)
+    End Sub
+
+
+    Private Sub SyncLayerOrderWithOperator()
+        Dim newParams As New List(Of RParameter)
+        For Each item As ListViewItem In lstLayers.Items
+            Dim param As RParameter = clsBaseOperator.GetParameter(item.Tag.ToString())
+            If param IsNot Nothing Then
+                newParams.Add(param)
+            End If
+        Next
+        For Each param As RParameter In clsBaseOperator.clsParameters
+            If Not newParams.Contains(param) Then
+                newParams.Add(param)
+            End If
+        Next
+        clsBaseOperator.clsParameters = newParams
+    End Sub
+
+
     Private Sub AddLayerToList(clsGeomParameter As RParameter, strGeomName As String, bLayerComplete As Boolean)
         Dim lviLayer As ListViewItem
         Dim strLayerName As String
@@ -90,42 +165,119 @@ Public Class ucrAdditionalLayers
         SetEditDeleteEnabled()
     End Sub
 
-    Private Sub cmdAdd_Click(sender As Object, e As EventArgs) Handles cmdAdd.Click
-        Dim clsNewLocalAesFunction As New RFunction
+    Private Sub cmdAdd_Click(sender As Object, e As EventArgs) Handles cmdAdd.Click, toolStripMenuItemGeomBar.Click, toolStripMenuItemGeomBoxPlot.Click, toolStripMenuItemGeomCol.Click, toolStripMenuItemGeomCount.Click, toolStripMenuItemGeomcategoricalmodel.Click,
+            toolStripMenuItemGeomDensity.Click, toolStripMenuItemGeomJitter.Click, toolStripMenuItemGeomLabel.Click, toolStripMenuItemGeomparallelslopes.Click, toolStripMenuItemGeomtile.Click, toolStripMenuItemGeomcontour.Click, toolStripMenuItemGeomhistogram.Click,
+            toolStripMenuItemGeomLabelRepel.Click, toolStripMenuItemGeomLine.Click, toolStripMenuItemGeomsmooth.Click, toolStripMenuItemGeomPoint.Click, toolStripMenuItemGeomRug.Click, toolStripMenuItemGeomText.Click, toolStripMenuItemGeomTextRepel.Click, toolStripMenuItemGeomDensityRidges.Click
+
+        'setup the geom function to use
         Dim clsNewGeomFunction As New RFunction
-        Dim clsNewGeomParameter As RParameter
+        Dim strGeomRCommand As String = "geom_boxplot"
+        Dim strPackage As String = "ggplot2"
+        Dim bShowLayerSubdialog As Boolean = False
 
-        clsNewLocalAesFunction = GgplotDefaults.clsAesFunction.Clone()
+        If sender Is toolStripMenuItemGeomBoxPlot Then
+            strGeomRCommand = "geom_boxplot"
+        ElseIf sender Is toolStripMenuItemGeomBar Then
+            strGeomRCommand = "geom_bar"
+        ElseIf sender Is toolStripMenuItemGeomCount Then
+            strGeomRCommand = "geom_count"
+        ElseIf sender Is toolStripMenuItemGeomCol Then
+            strGeomRCommand = "geom_col"
+        ElseIf sender Is toolStripMenuItemGeomDensity Then
+            strGeomRCommand = "geom_density"
+        ElseIf sender Is toolStripMenuItemGeomtile Then
+            strGeomRCommand = "geom_tile"
+        ElseIf sender Is toolStripMenuItemGeomJitter Then
+            strGeomRCommand = "geom_jitter"
+        ElseIf sender Is toolStripMenuItemGeomhistogram Then
+            strGeomRCommand = "geom_histogram"
+        ElseIf sender Is toolStripMenuItemGeomcontour Then
+            strGeomRCommand = "geom_contour"
+        ElseIf sender Is toolStripMenuItemGeomDensityRidges Then
+            strPackage = "ggridges"
+            strGeomRCommand = "geom_density_ridges"
+        ElseIf sender Is toolStripMenuItemGeomLabel Then
+            strGeomRCommand = "geom_label"
+        ElseIf sender Is toolStripMenuItemGeomLabelRepel Then
+            strPackage = "ggrepel"
+            strGeomRCommand = "geom_label_repel"
+        ElseIf sender Is toolStripMenuItemGeomLine Then
+            strGeomRCommand = "geom_line"
+        ElseIf sender Is toolStripMenuItemGeomPoint Then
+            strGeomRCommand = "geom_point"
+        ElseIf sender Is toolStripMenuItemGeomRug Then
+            strGeomRCommand = "geom_rug"
+        ElseIf sender Is toolStripMenuItemGeomsmooth Then
+            strGeomRCommand = "geom_smooth"
+        ElseIf sender Is toolStripMenuItemGeomText Then
+            strGeomRCommand = "geom_text"
+        ElseIf sender Is toolStripMenuItemGeomTextRepel Then
+            strPackage = "ggrepel"
+            strGeomRCommand = "geom_text_repel"
+        ElseIf sender Is toolStripMenuItemGeomcategoricalmodel Then
+            strPackage = "moderndive"
+            strGeomRCommand = "geom_categorical_model"
+        ElseIf sender Is toolStripMenuItemGeomparallelslopes Then
+            strPackage = "moderndive"
+            strGeomRCommand = "geom_parallel_slopes"
+        ElseIf sender Is cmdAdd Then
+            bShowLayerSubdialog = True
+        End If
 
-        clsNewGeomFunction.SetPackageName("ggplot2")
-        clsNewGeomFunction.SetRCommand("geom_boxplot")
+        clsNewGeomFunction.SetPackageName(strPackage)
+        clsNewGeomFunction.SetRCommand(strGeomRCommand)
 
-        sdgLayerOptions.SetupLayer(clsNewGgPlot:=clsGgplotFunction, clsNewGeomFunc:=clsNewGeomFunction, clsNewGlobalAesFunc:=clsGlobalAesFunction, clsNewLocalAes:=clsNewLocalAesFunction, bFixGeom:=False, ucrNewBaseSelector:=Nothing, bApplyAesGlobally:=(bSetGlobalIsDefault AndAlso lstLayers.Items.Count = 0), iTabToDisplay:=0, strDataFrame:=strGlobalDataFrame)
-        ParentForm.SendToBack()
-        sdgLayerOptions.tbcLayers.SelectedIndex = 0
-        sdgLayerOptions.ShowDialog()
-        strGlobalDataFrame = sdgLayerOptions.GetGlobalDataFrame()
+        'if no specific geom command selected then show the layer subdialog for geom command selection
+        If bShowLayerSubdialog Then
+            sdgLayerOptions.SetupLayer(clsNewGgPlot:=clsGgplotFunction,
+                                   clsNewGeomFunc:=clsNewGeomFunction,
+                                   clsNewGlobalAesFunc:=clsGlobalAesFunction,
+                                   clsNewLocalAes:=GgplotDefaults.clsAesFunction,
+                                   bFixGeom:=False,
+                                   ucrNewBaseSelector:=Nothing,
+                                   bApplyAesGlobally:=(bSetGlobalIsDefault AndAlso lstLayers.Items.Count = 0),
+                                   iTabToDisplay:=0,
+                                   strDataFrame:=strGlobalDataFrame)
+            ParentForm.SendToBack()
+            sdgLayerOptions.ShowDialog()
+            'get the new options from the subdialog
+            'todo. Should what should happen if a user clicks on Cancel in the sub dialog?
+            strGlobalDataFrame = sdgLayerOptions.GetGlobalDataFrame()
+            clsNewGeomFunction = sdgLayerOptions.clsGeomFunction.Clone()
+        End If
 
-        clsNewGeomFunction = sdgLayerOptions.clsGeomFunction.Clone()
-        iMaxParameterPosition = iMaxParameterPosition + 1
+        'incremnet the dialog parameter position to get unique argument name
+        iMaxParameterPosition += 1
 
-        clsNewGeomParameter = New RParameter()
-        clsNewGeomParameter.SetArgumentName(clsNewGeomFunction.strRCommand & iMaxParameterPosition)
-        clsNewGeomParameter.SetArgument(clsNewGeomFunction)
-        clsNewGeomParameter.Position = iMaxParameterPosition
+        'add the geom function as a new parameter of the dialog base operator
+        Dim clsNewGeomParameter As New RParameter(clsNewGeomFunction.strRCommand & iMaxParameterPosition,
+                                                  clsNewGeomFunction, iNewPosition:=iMaxParameterPosition)
         clsBaseOperator.AddParameter(clsNewGeomParameter)
+
+        'add the parameter to the list of layers
         AddLayerToList(clsNewGeomParameter, clsNewGeomFunction.strRCommand, bLayerComplete:=sdgLayerOptions.TestForOKEnabled())
     End Sub
 
     Private Sub SetEditDeleteEnabled()
-        If lstLayers.Items.Count > 0 AndAlso lstLayers.SelectedItems.Count = 1 Then
+        Dim idx As Integer = -1
+        If lstLayers.SelectedItems.Count = 1 Then
+            idx = lstLayers.SelectedIndices(0)
             cmdDelete.Enabled = True
             cmdEdit.Enabled = True
+            cmdUp.Enabled = (idx > 0)
+            cmdTop.Enabled = (idx > 0)
+            cmdDown.Enabled = (idx >= 0 AndAlso idx < lstLayers.Items.Count - 1)
+            cmdBottom.Enabled = (idx >= 0 AndAlso idx < lstLayers.Items.Count - 1)
         Else
             cmdDelete.Enabled = False
             cmdEdit.Enabled = False
+            cmdUp.Enabled = False
+            cmdTop.Enabled = False
+            cmdDown.Enabled = False
+            cmdBottom.Enabled = False
         End If
     End Sub
+
 
     Private Sub lstLayers_SelectedIndexChanged(sender As Object, e As EventArgs) Handles lstLayers.SelectedIndexChanged
         SetEditDeleteEnabled()
@@ -140,7 +292,7 @@ Public Class ucrAdditionalLayers
                 'When the number of Layers in the lstLayers on ucrAdditionalLayers need to check if OK is enabled on dlgGeneralForGraphics.
                 RaiseEvent NumberOfLayersChanged()
             Else
-                MsgBox("You cannot delete a layer that was created on the main dialog.", MsgBoxStyle.Information, "Cannot delete layer")
+                MsgBoxTranslate("You cannot delete a layer that was created on the main dialog.", MsgBoxStyle.Information, "Cannot delete layer")
             End If
         End If
     End Sub
@@ -171,7 +323,7 @@ Public Class ucrAdditionalLayers
             clsSelectedGeomFunction = sdgLayerOptions.clsGeomFunction.Clone()
             clsSelectedGeomParameter.SetArgument(clsSelectedGeomFunction)
         Else
-            MsgBox("Could not find layer. Delete the layer and recreate it.", MsgBoxStyle.Information, "Cannot find layer")
+            MsgBoxTranslate("Could not find layer. Delete the layer and recreate it.", MsgBoxStyle.Information, "Cannot find layer")
         End If
     End Sub
 
@@ -189,4 +341,21 @@ Public Class ucrAdditionalLayers
         End If
         Return strGeom
     End Function
+
+
+    Private Sub cmdgoUp_Click(sender As Object, e As EventArgs) Handles cmdUp.Click
+        ReorderListViewItems(Direction.Up)
+    End Sub
+
+    Private Sub cmdgoTop_Click(sender As Object, e As EventArgs) Handles cmdTop.Click
+        ReorderListViewItems(Direction.Top)
+    End Sub
+
+    Private Sub cmdgoDown_Click(sender As Object, e As EventArgs) Handles cmdDown.Click
+        ReorderListViewItems(Direction.Down)
+    End Sub
+
+    Private Sub cmdgoBottom_Click(sender As Object, e As EventArgs) Handles cmdBottom.Click
+        ReorderListViewItems(Direction.Bottom)
+    End Sub
 End Class

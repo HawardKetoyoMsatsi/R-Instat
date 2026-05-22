@@ -18,10 +18,11 @@ Imports instat.Translations
 Imports RDotNet
 Public Class dlgRestrict
     Public bFirstLoad As Boolean
-    Private clsRemoveFilter As RFunction
-    Private clsSetCurrentFilter As RFunction
-    Private clsSubset As RFunction
-    Private clsFilterView As RFunction
+    Private clsRemoveFilter As New RFunction
+    Private clsSetCurrentFilter As New RFunction
+    Private clsSubset As New RFunction
+    Private clsFilterView As New RFunction
+    Private clsCatFunction As New RFunction
     Public bIsSubsetDialog As Boolean
     Public strDefaultDataframe As String = ""
     Public strDefaultColumn As String = ""
@@ -37,8 +38,10 @@ Public Class dlgRestrict
         clsRemoveFilter = New RFunction
         clsSetCurrentFilter = New RFunction
         clsFilterView = New RFunction
+        clsCatFunction = New RFunction
 
         bFirstLoad = True
+        clsCatFunction.SetRCommand("cat")
         clsRemoveFilter.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$remove_current_filter")
         clsSetCurrentFilter.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$set_current_filter")
         clsSubset.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$copy_data_object")
@@ -52,6 +55,7 @@ Public Class dlgRestrict
             bFirstLoad = False
         End If
         SetDefaultDataFrame()
+        UpdateFilterReceiver()
         If bAutoOpenSubDialog Then
             OpenNewFilterSubDialog()
         End If
@@ -65,7 +69,6 @@ Public Class dlgRestrict
         ucrReceiverFilter.Selector = ucrSelectorFilter
         ucrReceiverFilter.SetMeAsReceiver()
         ucrBase.iHelpTopicID = 340
-        'rdoApplyAsSubset.Enabled = False
 
         ' ucrSave
         ucrNewDataFrameName.SetSaveTypeAsDataFrame()
@@ -81,12 +84,10 @@ Public Class dlgRestrict
         SetFilterSubsetStatus()
         SetDefaultDataFrame()
         bResetSubdialog = True
-        'ucrNewDataFrameName.Visible = False 'temporarily while we have disabled the option to get a new dataframe
-        'lblNewDataFrameName.Visible = False 'temporarily while we have disabled the option to get a new dataframe
     End Sub
 
     Private Sub TestOkEnabled()
-        If Not ucrReceiverFilter.IsEmpty AndAlso ((rdoApplyAsSubset.Checked AndAlso ucrNewDataFrameName.IsComplete) OrElse (rdoApplyAsFilter.Checked)) Then
+        If Not ucrReceiverFilter.IsEmpty AndAlso ((rdoApplyAsSubset.Checked AndAlso ucrNewDataFrameName.IsComplete) OrElse (rdoApplyAsFilter.Checked) OrElse (rdoSavefilter.Checked)) Then
             ucrBase.OKEnabled(True)
         Else
             ucrBase.OKEnabled(False)
@@ -94,14 +95,12 @@ Public Class dlgRestrict
     End Sub
 
     Private Sub SetFilterSubsetStatus()
+        Me.Text = If(bIsSubsetDialog, "Subset", "Filter")
+        rdoApplyAsFilter.Enabled = Not bIsSubsetDialog
         If bIsSubsetDialog Then
-            rdoApplyAsFilter.Enabled = False
             rdoApplyAsSubset.Checked = True
-            Me.Text = "Subset"
         Else
-            rdoApplyAsFilter.Enabled = True
             rdoApplyAsFilter.Checked = True
-            Me.Text = "Filter"
         End If
     End Sub
 
@@ -136,10 +135,11 @@ Public Class dlgRestrict
     End Sub
 
     Private Sub ucrSelectorFilter_DataFrameChanged() Handles ucrSelectorFilter.DataFrameChanged
-        clsSetCurrentFilter.AddParameter("data_name", Chr(34) & ucrSelectorFilter.ucrAvailableDataFrames.cboAvailableDataFrames.Text & Chr(34))
-        clsRemoveFilter.AddParameter("data_name", Chr(34) & ucrSelectorFilter.ucrAvailableDataFrames.cboAvailableDataFrames.Text & Chr(34))
-        clsFilterView.AddParameter("data_name", Chr(34) & ucrSelectorFilter.ucrAvailableDataFrames.cboAvailableDataFrames.Text & Chr(34))
-        clsSubset.AddParameter("data_name", Chr(34) & ucrSelectorFilter.ucrAvailableDataFrames.cboAvailableDataFrames.Text & Chr(34))
+        Dim strDataFrame As String = Chr(34) & ucrSelectorFilter.ucrAvailableDataFrames.cboAvailableDataFrames.Text & Chr(34)
+        clsSetCurrentFilter.AddParameter("data_name", strDataFrame, iPosition:=0)
+        clsRemoveFilter.AddParameter("data_name", strDataFrame, iPosition:=0)
+        clsFilterView.AddParameter("data_name", strDataFrame, iPosition:=0)
+        clsSubset.AddParameter("data_name", strDataFrame, iPosition:=0)
         SetDefaultNewDataFrameName()
     End Sub
 
@@ -174,12 +174,8 @@ Public Class dlgRestrict
         TestOkEnabled()
     End Sub
 
-    Private Sub rdoApplyAs_CheckedChanged(sender As Object, e As EventArgs) Handles rdoApplyAsFilter.CheckedChanged, rdoApplyAsSubset.CheckedChanged
-        If rdoApplyAsFilter.Checked Then
-            ucrNewDataFrameName.Visible = False
-        Else
-            ucrNewDataFrameName.Visible = True
-        End If
+    Private Sub rdoApplyAs_CheckedChanged(sender As Object, e As EventArgs) Handles rdoApplyAsFilter.CheckedChanged, rdoApplyAsSubset.CheckedChanged, rdoSavefilter.CheckedChanged
+        ucrNewDataFrameName.Visible = Not (rdoApplyAsFilter.Checked OrElse rdoSavefilter.Checked)
         SetFilterOptions()
         SetBaseFunction()
         TestOkEnabled()
@@ -187,20 +183,15 @@ Public Class dlgRestrict
 
     Private Sub SetBaseFunction()
         If rdoApplyAsFilter.Checked Then
-            If ucrReceiverFilter.IsEmpty Then
-                ucrBase.clsRsyntax.SetBaseRFunction(clsRemoveFilter)
-            Else
-                ucrBase.clsRsyntax.SetBaseRFunction(clsSetCurrentFilter)
-            End If
+            ucrBase.clsRsyntax.SetBaseRFunction(If(ucrReceiverFilter.IsEmpty,
+                                                clsRemoveFilter, clsSetCurrentFilter))
             ucrBase.clsRsyntax.RemoveAssignTo()
-        Else
+        ElseIf rdoApplyAsSubset.Checked Then
             ucrBase.clsRsyntax.SetBaseRFunction(clsSubset)
-            clsSubset.AddParameter("new_name", Chr(34) & ucrNewDataFrameName.GetText() & Chr(34))
-            If ucrNewDataFrameName.IsComplete() Then
-                'ucrBase.clsRsyntax.SetAssignTo(ucrNewDataFrameName.GetText(), strTempDataframe:=ucrNewDataFrameName.GetText())
-            Else
-                'ucrBase.clsRsyntax.RemoveAssignTo()
-            End If
+            clsSubset.AddParameter("new_name", Chr(34) & ucrNewDataFrameName.GetText() & Chr(34), iPosition:=1)
+        Else
+            clsCatFunction.AddParameter("dispay", Chr(34) & "Saved column selection" & Chr(34), bIncludeArgumentName:=False)
+            ucrBase.clsRsyntax.SetBaseRFunction(clsCatFunction)
         End If
     End Sub
 
@@ -219,8 +210,36 @@ Public Class dlgRestrict
 
     Private Sub cmdFilterFromFactors_Click(sender As Object, e As EventArgs) Handles cmdFilterFromFactors.Click
         sdgFiltersFromFactor.SetRcodeAndDefaultDataFrame(ucrSelectorFilter, bReset:=bResetSubdialog)
+        sdgFiltersFromFactor.enumFactorMode = sdgFiltersFromFactor.FactorMode.Filter
         sdgFiltersFromFactor.ShowDialog()
         bResetSubdialog = False
         ucrSelectorFilter.LoadList()
+    End Sub
+
+    Private Sub UpdateFilterReceiver()
+        If ucrReceiverFilter.IsEmpty Then
+            Exit Sub
+        End If
+        Dim clsGetFilterNamesFunction As New RFunction
+        Dim expItems As SymbolicExpression
+        Dim vecFilters As GenericVector = Nothing
+
+        clsGetFilterNamesFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_filter_names")
+        clsGetFilterNamesFunction.AddParameter("data_name", Chr(34) & ucrSelectorFilter.ucrAvailableDataFrames.cboAvailableDataFrames.Text & Chr(34), iPosition:=0)
+
+        expItems = frmMain.clsRLink.RunInternalScriptGetValue(clsGetFilterNamesFunction.ToScript(), bSilent:=True)
+        If expItems Is Nothing OrElse expItems.Type = Internals.SymbolicExpressionType.Null Then
+            Exit Sub
+        End If
+        vecFilters = expItems.AsList
+        If Not vecFilters.AsCharacter.Contains(ucrReceiverFilter.GetVariableNames(False)) Then
+            ucrReceiverFilter.Clear()
+        End If
+    End Sub
+
+    Private Sub ucrBase_ClickOk(sender As Object, e As EventArgs) Handles ucrBase.ClickOk
+        If rdoApplyAsSubset.Checked Then
+            SetDefaults()
+        End If
     End Sub
 End Class

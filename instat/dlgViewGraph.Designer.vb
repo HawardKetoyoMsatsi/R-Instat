@@ -39,10 +39,10 @@ Partial Class dlgViewGraph
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Me.grpDisplayOptions = New System.Windows.Forms.GroupBox()
-        Me.rdoDisplayInteractiveView = New System.Windows.Forms.RadioButton()
-        Me.rdoDisplaySeparateWindow = New System.Windows.Forms.RadioButton()
-        Me.rdoDisplayRViewer = New System.Windows.Forms.RadioButton()
-        Me.rdoDisplayOutputWindow = New System.Windows.Forms.RadioButton()
+        Me.rdoMaximised = New System.Windows.Forms.RadioButton()
+        Me.rdoInteractiveView = New System.Windows.Forms.RadioButton()
+        Me.rdoRViewer = New System.Windows.Forms.RadioButton()
+        Me.rdoOutputWindow = New System.Windows.Forms.RadioButton()
         Me.ucrPnlDisplayOptions = New instat.UcrPanel()
         Me.lblGraphtoUse = New System.Windows.Forms.Label()
         Me.ucrGraphReceiver = New instat.ucrReceiverSingle()
@@ -53,10 +53,10 @@ Partial Class dlgViewGraph
         '
         'grpDisplayOptions
         '
-        Me.grpDisplayOptions.Controls.Add(Me.rdoDisplayInteractiveView)
-        Me.grpDisplayOptions.Controls.Add(Me.rdoDisplaySeparateWindow)
-        Me.grpDisplayOptions.Controls.Add(Me.rdoDisplayRViewer)
-        Me.grpDisplayOptions.Controls.Add(Me.rdoDisplayOutputWindow)
+        Me.grpDisplayOptions.Controls.Add(Me.rdoMaximised)
+        Me.grpDisplayOptions.Controls.Add(Me.rdoInteractiveView)
+        Me.grpDisplayOptions.Controls.Add(Me.rdoRViewer)
+        Me.grpDisplayOptions.Controls.Add(Me.rdoOutputWindow)
         Me.grpDisplayOptions.Controls.Add(Me.ucrPnlDisplayOptions)
         Me.grpDisplayOptions.Location = New System.Drawing.Point(246, 90)
         Me.grpDisplayOptions.Name = "grpDisplayOptions"
@@ -65,54 +65,55 @@ Partial Class dlgViewGraph
         Me.grpDisplayOptions.TabStop = False
         Me.grpDisplayOptions.Text = "Display Options"
         '
-        'rdoDisplayInteractiveView
+        'rdoMaximised
         '
-        Me.rdoDisplayInteractiveView.AutoSize = True
-        Me.rdoDisplayInteractiveView.Location = New System.Drawing.Point(9, 22)
-        Me.rdoDisplayInteractiveView.Name = "rdoDisplayInteractiveView"
-        Me.rdoDisplayInteractiveView.Size = New System.Drawing.Size(158, 17)
-        Me.rdoDisplayInteractiveView.TabIndex = 1
-        Me.rdoDisplayInteractiveView.TabStop = True
-        Me.rdoDisplayInteractiveView.Text = "Display in Interactive Viewer"
-        Me.rdoDisplayInteractiveView.UseVisualStyleBackColor = True
+        Me.rdoMaximised.AutoSize = True
+        Me.rdoMaximised.Location = New System.Drawing.Point(9, 43)
+        Me.rdoMaximised.Name = "rdoMaximised"
+        Me.rdoMaximised.Size = New System.Drawing.Size(113, 17)
+        Me.rdoMaximised.TabIndex = 4
+        Me.rdoMaximised.TabStop = True
+        Me.rdoMaximised.Text = "Maximised window"
+        Me.rdoMaximised.UseVisualStyleBackColor = True
         '
-        'rdoDisplaySeparateWindow
+        'rdoInteractiveView
         '
-        Me.rdoDisplaySeparateWindow.AutoSize = True
-        Me.rdoDisplaySeparateWindow.Location = New System.Drawing.Point(9, 91)
-        Me.rdoDisplaySeparateWindow.Name = "rdoDisplaySeparateWindow"
-        Me.rdoDisplaySeparateWindow.Size = New System.Drawing.Size(158, 17)
-        Me.rdoDisplaySeparateWindow.TabIndex = 4
-        Me.rdoDisplaySeparateWindow.TabStop = True
-        Me.rdoDisplaySeparateWindow.Text = "Display in Separate Window"
-        Me.rdoDisplaySeparateWindow.UseVisualStyleBackColor = True
+        Me.rdoInteractiveView.AutoSize = True
+        Me.rdoInteractiveView.Location = New System.Drawing.Point(9, 65)
+        Me.rdoInteractiveView.Name = "rdoInteractiveView"
+        Me.rdoInteractiveView.Size = New System.Drawing.Size(140, 17)
+        Me.rdoInteractiveView.TabIndex = 1
+        Me.rdoInteractiveView.TabStop = True
+        Me.rdoInteractiveView.Text = "Interactive viewer(Plotly)"
+        Me.rdoInteractiveView.UseVisualStyleBackColor = True
         '
-        'rdoDisplayRViewer
+        'rdoRViewer
         '
-        Me.rdoDisplayRViewer.AutoSize = True
-        Me.rdoDisplayRViewer.Location = New System.Drawing.Point(9, 45)
-        Me.rdoDisplayRViewer.Name = "rdoDisplayRViewer"
-        Me.rdoDisplayRViewer.Size = New System.Drawing.Size(116, 17)
-        Me.rdoDisplayRViewer.TabIndex = 2
-        Me.rdoDisplayRViewer.TabStop = True
-        Me.rdoDisplayRViewer.Text = "Display in R-Viewer"
-        Me.rdoDisplayRViewer.UseVisualStyleBackColor = True
+        Me.rdoRViewer.AutoSize = True
+        Me.rdoRViewer.Location = New System.Drawing.Point(9, 87)
+        Me.rdoRViewer.Name = "rdoRViewer"
+        Me.rdoRViewer.Size = New System.Drawing.Size(68, 17)
+        Me.rdoRViewer.TabIndex = 2
+        Me.rdoRViewer.TabStop = True
+        Me.rdoRViewer.Text = "R-Viewer"
+        Me.rdoRViewer.UseVisualStyleBackColor = True
         '
-        'rdoDisplayOutputWindow
+        'rdoOutputWindow
         '
-        Me.rdoDisplayOutputWindow.AutoSize = True
-        Me.rdoDisplayOutputWindow.Location = New System.Drawing.Point(9, 68)
-        Me.rdoDisplayOutputWindow.Name = "rdoDisplayOutputWindow"
-        Me.rdoDisplayOutputWindow.Size = New System.Drawing.Size(147, 17)
-        Me.rdoDisplayOutputWindow.TabIndex = 3
-        Me.rdoDisplayOutputWindow.TabStop = True
-        Me.rdoDisplayOutputWindow.Text = "Display in Output Window"
-        Me.rdoDisplayOutputWindow.UseVisualStyleBackColor = True
+        Me.rdoOutputWindow.AutoSize = True
+        Me.rdoOutputWindow.Location = New System.Drawing.Point(9, 22)
+        Me.rdoOutputWindow.Name = "rdoOutputWindow"
+        Me.rdoOutputWindow.Size = New System.Drawing.Size(96, 17)
+        Me.rdoOutputWindow.TabIndex = 3
+        Me.rdoOutputWindow.TabStop = True
+        Me.rdoOutputWindow.Text = "Output window"
+        Me.rdoOutputWindow.UseVisualStyleBackColor = True
         '
         'ucrPnlDisplayOptions
         '
         Me.ucrPnlDisplayOptions.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
         Me.ucrPnlDisplayOptions.Location = New System.Drawing.Point(6, 19)
+        Me.ucrPnlDisplayOptions.Margin = New System.Windows.Forms.Padding(6, 6, 6, 6)
         Me.ucrPnlDisplayOptions.Name = "ucrPnlDisplayOptions"
         Me.ucrPnlDisplayOptions.Size = New System.Drawing.Size(203, 99)
         Me.ucrPnlDisplayOptions.TabIndex = 0
@@ -156,8 +157,9 @@ Partial Class dlgViewGraph
         Me.ucrBase.AutoSize = True
         Me.ucrBase.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
         Me.ucrBase.Location = New System.Drawing.Point(10, 220)
+        Me.ucrBase.Margin = New System.Windows.Forms.Padding(4, 4, 4, 4)
         Me.ucrBase.Name = "ucrBase"
-        Me.ucrBase.Size = New System.Drawing.Size(405, 52)
+        Me.ucrBase.Size = New System.Drawing.Size(408, 52)
         Me.ucrBase.TabIndex = 4
         '
         'dlgViewGraph
@@ -187,11 +189,11 @@ Partial Class dlgViewGraph
     Friend WithEvents ucrBase As ucrButtons
     Friend WithEvents ucrGraphsSelector As ucrSelectorByDataFrameAddRemove
     Friend WithEvents grpDisplayOptions As GroupBox
-    Friend WithEvents rdoDisplaySeparateWindow As RadioButton
-    Friend WithEvents rdoDisplayRViewer As RadioButton
-    Friend WithEvents rdoDisplayOutputWindow As RadioButton
+    Friend WithEvents rdoRViewer As RadioButton
+    Friend WithEvents rdoOutputWindow As RadioButton
     Friend WithEvents ucrPnlDisplayOptions As UcrPanel
-    Friend WithEvents rdoDisplayInteractiveView As RadioButton
+    Friend WithEvents rdoInteractiveView As RadioButton
     Friend WithEvents lblGraphtoUse As Label
     Friend WithEvents ucrGraphReceiver As ucrReceiverSingle
+    Friend WithEvents rdoMaximised As RadioButton
 End Class

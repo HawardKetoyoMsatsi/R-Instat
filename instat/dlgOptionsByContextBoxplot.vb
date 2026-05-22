@@ -55,6 +55,8 @@ Public Class dlgOptionsByContextBoxplot
     Private strFacetCol As String = "Facet Column"
     Private strColour As String = "Colour"
     Private strNone As String = "None"
+    Private ReadOnly strFacetRowAll As String = "Facet Row + O"
+    Private ReadOnly strFacetColAll As String = "Facet Col + O"
 
     Private clsCoordPolarFunction As New RFunction
     Private clsCoordPolarStartOperator As New ROperator
@@ -156,13 +158,13 @@ Public Class dlgOptionsByContextBoxplot
         ucrReceiverContext3.strSelectorHeading = "Contexts,Options,Blocks"
         ucrReceiverContext3.SetOptionsByContextTypesAllOptionsContextsBlockings()
 
-        ucrInputContext1.SetItems({strFacetRow, strFacetCol, strColour, strNone})
+        ucrInputContext1.SetItems({strFacetRow, strFacetCol, strFacetRowAll, strFacetColAll, strColour, strNone})
         ucrInputContext1.SetDropDownStyleAsNonEditable()
 
-        ucrInputContext2.SetItems({strFacetRow, strFacetCol, strColour, strNone})
+        ucrInputContext2.SetItems({strFacetRow, strFacetCol, strFacetRowAll, strFacetColAll, strColour, strNone})
         ucrInputContext2.SetDropDownStyleAsNonEditable()
 
-        ucrInputContext3.SetItems({strFacetRow, strFacetCol, strColour, strNone})
+        ucrInputContext3.SetItems({strFacetRow, strFacetCol, strFacetRowAll, strFacetColAll, strColour, strNone})
         ucrInputContext3.SetDropDownStyleAsNonEditable()
 
         ucrPnlPlotType.AddRadioButton(rdoBoxplot)
@@ -190,7 +192,7 @@ Public Class dlgOptionsByContextBoxplot
 
         ucrSavePlot.SetPrefix("boxplot")
         ucrSavePlot.SetIsComboBox()
-        ucrSavePlot.SetCheckBoxText("Save Graph")
+        ucrSavePlot.SetCheckBoxText("Store Graph")
         ucrSavePlot.SetSaveTypeAsGraph()
         ucrSavePlot.SetDataFrameSelector(ucrSelectorPlot.ucrAvailableDataFrames)
         ucrSavePlot.SetAssignToIfUncheckedValue("last_graph")
@@ -331,25 +333,6 @@ Public Class dlgOptionsByContextBoxplot
         TestOKEnabled()
     End Sub
 
-    Private Sub cmdOptions_Click(sender As Object, e As EventArgs) Handles cmdOptions.Click
-        sdgPlots.SetRCode(clsBaseOperator, clsNewCoordPolarFunction:=clsCoordPolarFunction, clsNewCoordPolarStartOperator:=clsCoordPolarStartOperator, clsNewThemeFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, clsNewGlobalAesFunction:=clsRaesGlobalFunction,
-                          clsNewXScalecontinuousFunction:=clsXScaleContinuousFunction, clsNewYScalecontinuousFunction:=clsYScaleContinuousFunction, clsNewXLabsTitleFunction:=clsXLabsFunction, clsNewScaleFillViridisFunction:=clsScaleFillViridisFunction,
-                          clsNewScaleColourViridisFunction:=clsScaleColourViridisFunction, clsNewYLabTitleFunction:=clsYLabFunction, clsNewLabsFunction:=clsLabsFunction, clsNewFacetFunction:=clsFacetFunction, clsNewXScaleDateFunction:=clsXScaleDateFunction,
-                          clsNewAnnotateFunction:=clsAnnotateFunction, clsNewYScaleDateFunction:=clsYScaleDateFunction, ucrNewBaseSelector:=ucrSelectorPlot, bReset:=bResetSubdialog)
-        'this is a temporary fix because we have facets done on the main dialog
-        sdgPlots.tbpFacet.Enabled = False
-        sdgPlots.ShowDialog()
-        SetRCodeForControls(False)
-        bResetSubdialog = False
-    End Sub
-
-    Private Sub cmdBoxPlotOptions_Click(sender As Object, e As EventArgs) Handles cmdBoxPlotOptions.Click
-        sdgLayerOptions.SetupLayer(clsNewGgPlot:=clsRggPlotFunction, clsNewGeomFunc:=clsBoxplotViolinGeom, clsNewGlobalAesFunc:=clsRaesGlobalFunction, clsNewLocalAes:=clsRaesBoxplotFunction, bFixGeom:=True, ucrNewBaseSelector:=ucrSelectorPlot, bApplyAesGlobally:=True, bReset:=bResetBoxLayerSubdialog)
-        sdgLayerOptions.ShowDialog()
-        SetRCodeForControls(False)
-        bResetBoxLayerSubdialog = False
-    End Sub
-
     Private Sub ucrChkVerticalXTickMarkers_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkVerticalXTickMarkers.ControlValueChanged
         If ucrChkVerticalXTickMarkers.Checked Then
             dctThemeFunctions("axis.text.x").AddParameter("angle", "90", iPosition:=0)
@@ -366,17 +349,6 @@ Public Class dlgOptionsByContextBoxplot
         Else
             clsBaseOperator.RemoveParameterByName("theme")
         End If
-    End Sub
-
-    Private Sub ucrPnlPlotType_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrPnlPlotType.ControlValueChanged
-        If rdoBoxplot.Checked Then
-            clsBoxplotViolinGeom.SetRCommand("geom_boxplot")
-            cmdBoxPlotOptions.Text = "Boxplot Options"
-        ElseIf rdoViolin.Checked Then
-            clsBoxplotViolinGeom.SetRCommand("geom_violin")
-            cmdBoxPlotOptions.Text = "Violin Plot Options"
-        End If
-        autoTranslate(Me)
     End Sub
 
     Private Sub AutoFill()
@@ -396,6 +368,15 @@ Public Class dlgOptionsByContextBoxplot
             clsBaseOperator.RemoveParameterByName("geom_jitter")
         End If
         cmdPointOptions.Visible = ucrChkIncludePoints.Checked
+    End Sub
+
+    Private Sub ucrPnlPlotType_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrPnlPlotType.ControlValueChanged
+        If rdoBoxplot.Checked Then
+            clsBoxplotViolinGeom.SetRCommand("geom_boxplot")
+        ElseIf rdoViolin.Checked Then
+            clsBoxplotViolinGeom.SetRCommand("geom_violin")
+        End If
+        autoTranslate(Me)
     End Sub
 
     Private Sub ucrChkIncludeHline_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkIncludeHline.ControlValueChanged
@@ -444,39 +425,38 @@ Public Class dlgOptionsByContextBoxplot
             clsFacetOp.ClearParameters()
             clsFacetFunction.RemoveParameterByName("dir")
             clsRaesGlobalFunction.RemoveParameterByName("fill")
-
             If Not ucrReceiverContext1.IsEmpty() Then
                 Select Case ucrInputContext1.GetText()
-                    Case strFacetRow
+                    Case strFacetRow, strFacetRowAll
                         clsFacetRowOp.AddParameter(iRowVars, ucrReceiverContext1.GetVariableNames(False), iPosition:=iRowVars)
-                        iRowVars = iRowVars + 1
-                    Case strFacetCol
+                        iRowVars += 1
+                    Case strFacetCol, strFacetColAll
                         clsFacetColOp.AddParameter(iColVars, ucrReceiverContext1.GetVariableNames(False), iPosition:=iColVars)
-                        iColVars = iColVars + 1
+                        iColVars += 1
                     Case strColour
                         clsRaesGlobalFunction.AddParameter("fill", ucrReceiverContext1.GetVariableNames(False), iPosition:=3)
                 End Select
             End If
             If Not ucrReceiverContext2.IsEmpty() Then
                 Select Case ucrInputContext2.GetText()
-                    Case strFacetRow
+                    Case strFacetRow, strFacetRowAll
                         clsFacetRowOp.AddParameter(iRowVars, ucrReceiverContext2.GetVariableNames(False), iPosition:=iRowVars)
-                        iRowVars = iRowVars + 1
-                    Case strFacetCol
+                        iRowVars += 1
+                    Case strFacetCol, strFacetColAll
                         clsFacetColOp.AddParameter(iColVars, ucrReceiverContext2.GetVariableNames(False), iPosition:=iColVars)
-                        iColVars = iColVars + 1
+                        iColVars += 1
                     Case strColour
                         clsRaesGlobalFunction.AddParameter("fill", ucrReceiverContext2.GetVariableNames(False), iPosition:=3)
                 End Select
             End If
             If Not ucrReceiverContext3.IsEmpty() Then
                 Select Case ucrInputContext3.GetText()
-                    Case strFacetRow
+                    Case strFacetRow, strFacetRowAll
                         clsFacetRowOp.AddParameter(iRowVars, ucrReceiverContext3.GetVariableNames(False), iPosition:=iRowVars)
-                        iRowVars = iRowVars + 1
-                    Case strFacetCol
+                        iRowVars += 1
+                    Case strFacetCol, strFacetColAll
                         clsFacetColOp.AddParameter(iColVars, ucrReceiverContext3.GetVariableNames(False), iPosition:=iColVars)
-                        iColVars = iColVars + 1
+                        iColVars += 1
                     Case strColour
                         clsRaesGlobalFunction.AddParameter("fill", ucrReceiverContext3.GetVariableNames(False), iPosition:=3)
                 End Select
@@ -513,5 +493,30 @@ Public Class dlgOptionsByContextBoxplot
 
     Private Sub Controls_ControlContentsChanged(ucrChangedControl As ucrCore) Handles ucrReceiverMeasurement.ControlContentsChanged, ucrSavePlot.ControlContentsChanged, ucrChkIncludePoints.ControlContentsChanged, ucrInputJitter.ControlContentsChanged, ucrNudTransparency.ControlContentsChanged, ucrChkIncludeHline.ControlContentsChanged, ucrInputHlineValue.ControlContentsChanged
         TestOKEnabled()
+    End Sub
+
+    Private Sub cmdOptions_Click(sender As Object, e As EventArgs) Handles cmdOptions.Click, toolStripMenuItemPlotOptions.Click
+        sdgPlots.SetRCode(clsBaseOperator, clsNewCoordPolarFunction:=clsCoordPolarFunction, clsNewCoordPolarStartOperator:=clsCoordPolarStartOperator, clsNewThemeFunction:=clsThemeFunction, dctNewThemeFunctions:=dctThemeFunctions, clsNewGlobalAesFunction:=clsRaesGlobalFunction,
+                                 clsNewXScalecontinuousFunction:=clsXScaleContinuousFunction, clsNewYScalecontinuousFunction:=clsYScaleContinuousFunction, clsNewXLabsTitleFunction:=clsXLabsFunction, clsNewScaleFillViridisFunction:=clsScaleFillViridisFunction,
+                                 clsNewScaleColourViridisFunction:=clsScaleColourViridisFunction, clsNewYLabTitleFunction:=clsYLabFunction, clsNewLabsFunction:=clsLabsFunction, clsNewFacetFunction:=clsFacetFunction, clsNewXScaleDateFunction:=clsXScaleDateFunction,
+                                 clsNewAnnotateFunction:=clsAnnotateFunction, clsNewYScaleDateFunction:=clsYScaleDateFunction, ucrNewBaseSelector:=ucrSelectorPlot, bReset:=bResetSubdialog)
+        'this is a temporary fix because we have facets done on the main dialog
+        sdgPlots.tbpFacet.Enabled = False
+        sdgPlots.ShowDialog()
+        SetRCodeForControls(False)
+        bResetSubdialog = False
+    End Sub
+
+    Private Sub ucrReceiverMeasurement_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrReceiverMeasurement.ControlValueChanged, ucrReceiverX.ControlValueChanged, ucrPnlPlotType.ControlValueChanged, ucrReceiverContext1.ControlValueChanged
+        cmdOptions.Enabled = True
+        toolStripMenuItemBoxplotOptions.Enabled = rdoBoxplot.Checked
+        toolStripMenuItemViolinplotOptions.Enabled = rdoViolin.Checked
+    End Sub
+
+    Private Sub toolStripMenuItemBoxplotOptions_Click(sender As Object, e As EventArgs) Handles toolStripMenuItemBoxplotOptions.Click, toolStripMenuItemViolinplotOptions.Click
+        sdgLayerOptions.SetupLayer(clsNewGgPlot:=clsRggPlotFunction, clsNewGeomFunc:=clsBoxplotViolinGeom, clsNewGlobalAesFunc:=clsRaesGlobalFunction, clsNewLocalAes:=clsRaesBoxplotFunction, bFixGeom:=True, ucrNewBaseSelector:=ucrSelectorPlot, bApplyAesGlobally:=True, bReset:=bResetBoxLayerSubdialog)
+        sdgLayerOptions.ShowDialog()
+        SetRCodeForControls(False)
+        bResetBoxLayerSubdialog = False
     End Sub
 End Class

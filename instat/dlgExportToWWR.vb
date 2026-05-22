@@ -22,7 +22,7 @@ Public Class dlgExportToWWR
     Private bResetSubdialog As Boolean = False
 
     'R function
-    Private clsWWRExport As RFunction
+    Private clsWWRExport As New RFunction
     Private Sub dlgExportToWWR_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
             InitiliseDialog()
@@ -109,6 +109,7 @@ Public Class dlgExportToWWR
         ucrSelectorExportToWWR.Reset()
         ucrReceiverStationIdentifier.SetMeAsReceiver()
 
+        clsWWRExport.SetPackageName("instatClimatic")
         clsWWRExport.SetRCommand("wwr_export")
         clsWWRExport.AddParameter("folder", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments).Replace("\", "/"), iPosition:=20)
 

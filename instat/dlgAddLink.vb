@@ -20,14 +20,12 @@ Imports RDotNet
 Public Class dlgAddLink
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
-    Private clsAddLink As RFunction
+    Private clsAddLink As New RFunction
 
     Private Sub dlgAddLink_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
             InitialiseDialog()
             bFirstLoad = False
-        Else
-            ReopenDialog()
         End If
         If bReset Then
             SetDefaults()
@@ -39,7 +37,7 @@ Public Class dlgAddLink
     End Sub
 
     Private Sub InitialiseDialog()
-        ucrBase.iHelpTopicID = 506
+        ucrBase.iHelpTopicID = 515
         ucrBase.clsRsyntax.iCallType = 2
         cmdSpecifyLink.Enabled = False ' temporarily disabled
 
@@ -68,8 +66,6 @@ Public Class dlgAddLink
         ucrDataSelectorTo.Reset()
         ucrSaveLink.Reset()
 
-        UpdateKeys()
-
         clsAddLink.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$add_link")
         clsAddLink.AddParameter("type", Chr(34) & "keyed_link" & Chr(34), iPosition:=3)
 
@@ -95,11 +91,7 @@ Public Class dlgAddLink
         TestOKEnabled()
     End Sub
 
-    Private Sub ReopenDialog()
-        UpdateKeys() ' currently I may open the dialog, then realise I haven't set my keys, make my key, reopen this dlg and my key doesn't show up until I reset it.
-    End Sub
-
-    Public Sub UpdateKeys()
+    Private Sub UpdateKeys()
         Dim clsColumnNames As New RFunction
         Dim lstKeys As GenericVector
         Dim chrKeyColumns As CharacterVector
@@ -108,17 +100,19 @@ Public Class dlgAddLink
         Dim bCanAutoLink As Boolean
         Dim strColumnNames As String()
         Dim clsGetKeys As New RFunction
+        Dim strDataFrameTo As String = ucrDataSelectorTo.cboAvailableDataFrames.Text
+        Dim strDataFrameFrom As String = ucrDataSelectorFrom.cboAvailableDataFrames.Text
 
-        If ucrDataSelectorTo.cboAvailableDataFrames.Text <> "" Then
+        If Not String.IsNullOrEmpty(strDataFrameFrom) AndAlso Not String.IsNullOrEmpty(strDataFrameTo) Then
             lvwLinkViewBox.Items.Clear()
 
-            lblKeys.Text = ucrDataSelectorTo.cboAvailableDataFrames.SelectedItem & GetTranslation(" Keys:")
+            lblKeys.Text = strDataFrameTo & GetTranslation(" Keys:")
             clsGetKeys.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_keys")
-            clsGetKeys.AddParameter("data_name", Chr(34) & ucrDataSelectorTo.cboAvailableDataFrames.SelectedItem & Chr(34))
+            clsGetKeys.AddParameter("data_name", Chr(34) & strDataFrameTo & Chr(34))
             lstKeys = frmMain.clsRLink.RunInternalScriptGetValue(clsGetKeys.ToScript).AsList
 
             clsColumnNames.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_column_names")
-            clsColumnNames.AddParameter("data_name", Chr(34) & ucrDataSelectorFrom.cboAvailableDataFrames.SelectedItem & Chr(34))
+            clsColumnNames.AddParameter("data_name", Chr(34) & strDataFrameFrom & Chr(34))
             strColumnNames = frmMain.clsRLink.RunInternalScriptGetValue(clsColumnNames.ToScript).AsCharacter().ToArray
 
             For i = 0 To lstKeys.Count - 1
@@ -169,7 +163,7 @@ Public Class dlgAddLink
         End If
     End Function
 
-    Private Sub ucrDataSelectorTo_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrDataSelectorTo.ControlValueChanged
+    Private Sub ucrDataSelectorTo_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrDataSelectorTo.ControlValueChanged, ucrDataSelectorFrom.ControlValueChanged
         UpdateKeys()
     End Sub
 

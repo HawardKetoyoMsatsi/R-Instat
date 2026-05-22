@@ -35,6 +35,9 @@ Public Class sdgOneVarFitModDisplay
         ucrPnlLikelihood.AddRadioButton(rdoLik, "FALSE")
         ucrPnlLikelihood.SetRDefault("TRUE")
 
+        ucrBase.iHelpTopicID = 114
+
+
         ucrChkPLotLogLik.AddToLinkedControls(ucrPnlLikelihood, {True}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True)
         ucrChkPLotLogLik.AddToLinkedControls(ucrSaveLikelihood, {True}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True)
         ucrChkPLotLogLik.AddRSyntaxContainsFunctionNamesCondition(True, {"llplot"})
@@ -58,14 +61,14 @@ Public Class sdgOneVarFitModDisplay
         ucrSavePlots.SetPrefix("plot")
         ucrSavePlots.SetSaveTypeAsGraph()
         ucrSavePlots.SetDataFrameSelector(dlgOneVarFitModel.ucrSelectorOneVarFitMod.ucrAvailableDataFrames)
-        ucrSavePlots.SetCheckBoxText("Save Graph")
+        ucrSavePlots.SetCheckBoxText("Store Graph")
         ucrSavePlots.SetIsComboBox()
         ucrSavePlots.SetAssignToIfUncheckedValue("last_graph")
 
         ucrSaveLikelihood.SetPrefix("likelihood")
         ucrSaveLikelihood.SetSaveTypeAsGraph()
         ucrSaveLikelihood.SetDataFrameSelector(dlgOneVarFitModel.ucrSelectorOneVarFitMod.ucrAvailableDataFrames)
-        ucrSaveLikelihood.SetCheckBoxText("Save Graph")
+        ucrSaveLikelihood.SetCheckBoxText("Store Graph")
         ucrSaveLikelihood.SetIsComboBox()
         ucrSaveLikelihood.SetAssignToIfUncheckedValue("last_likelihood")
         InitialiseTabs()

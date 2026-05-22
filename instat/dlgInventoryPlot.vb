@@ -18,10 +18,20 @@ Imports instat.Translations
 Public Class dlgInventoryPlot
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
-    Private clsInventoryPlot As RFunction
-    Private clsClimaticMissing As RFunction
-    Private clsClimaticDetails As RFunction
-    Private bResetSubdialog As Boolean = True
+    Private clsInventoryPlot As New RFunction
+    Private clsClimaticMissing As New RFunction
+    Private clsClimaticDetails As New RFunction
+    Private clsAddKeyFunction As New RFunction
+    Private clsNewCAddKeyFunction As New RFunction
+    Private clsDummyFunction As New RFunction
+    Private clsDataFrameFunction As New RFunction
+    Private clsGetDataNamesFunction As New RFunction
+    Private clsUpdatedDataNamesFunction As New RFunction
+    Private clsSetDiffFunction As New RFunction
+    Private clsAddColumnsFunction As New RFunction
+    Private clsConvertColumnToTypeFunction As New RFunction
+    Private clsBracketOperator As New ROperator
+    Private bResetSubdialog As Boolean = False
 
     Private Sub dlgInventoryPlot_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         If bFirstLoad Then
@@ -68,8 +78,9 @@ Public Class dlgInventoryPlot
         ucrReceiverStation.bAutoFill = True
         ucrReceiverStation.strSelectorHeading = "Factors"
 
-        ucrChkSummary.AddRSyntaxContainsFunctionNamesCondition(True, {"climatic_missing"})
         ucrChkSummary.SetText("Summary")
+        ucrChkSummary.AddParameterValuesCondition(True, "summary", "True")
+        ucrChkSummary.AddParameterValuesCondition(False, "summary", "False")
 
         ucrChkDetails.AddRSyntaxContainsFunctionNamesCondition(True, {"climatic_details"})
         ucrChkDetails.SetText("Details")
@@ -78,6 +89,11 @@ Public Class dlgInventoryPlot
         ucrChkOmitStart.SetText("Omit Start")
         ucrChkOmitStart.SetValuesCheckedAndUnchecked("TRUE", "FALSE")
         ucrChkOmitStart.SetRDefault("TRUE")
+
+        ucrChkHierarchal.SetParameter(New RParameter("duplicates", 10))
+        ucrChkHierarchal.SetText("Show Remaining Days")
+        ucrChkHierarchal.SetValuesCheckedAndUnchecked(Chr(34) & "hierarchical" & Chr(34), Chr(34) & "keep" & Chr(34))
+        ucrChkHierarchal.SetRDefault(Chr(34) & "keep" & Chr(34))
 
         ucrChkOmitEnd.SetParameter(New RParameter("end", 5))
         ucrChkOmitEnd.SetText("Omit End")
@@ -92,21 +108,19 @@ Public Class dlgInventoryPlot
         ucrChkMonth.SetParameter(New RParameter("month", 6))
         ucrChkMonth.SetText("Month")
         ucrChkMonth.SetValuesCheckedAndUnchecked("TRUE", "FALSE")
-        ucrChkMonth.SetRDefault("FALSE")
+        ucrChkMonth.SetRDefault("TRUE")
 
         ucrChkDay.SetParameter(New RParameter("day", 5))
         ucrChkDay.SetText("Day")
         ucrChkDay.SetValuesCheckedAndUnchecked("TRUE", "FALSE")
-        ucrChkDay.SetRDefault("TRUE")
+        ucrChkDay.SetRDefault("FALSE")
 
         ucrSaveDetails.SetPrefix("details")
-        ucrSaveDetails.SetCheckBoxText("Save Details")
+        ucrSaveDetails.SetCheckBoxText("Store Details")
         ucrSaveDetails.SetSaveTypeAsDataFrame()
         ucrSaveDetails.SetDataFrameSelector(ucrInventoryPlotSelector.ucrAvailableDataFrames)
         ucrSaveDetails.SetIsComboBox()
-        ' ucrSaveDetails.SetAssignToIfUncheckedValue("last_details")
 
-        ' ucrChkHour.SetParameter(New RParameter("", ))
         ucrChkHour.SetText("Hour")  ' this currently has no parameter associated with it
         ' ucrChkHour.SetRDefault("FALSE")
 
@@ -121,7 +135,7 @@ Public Class dlgInventoryPlot
         ucrPnlOrder.SetParameter(New RParameter("order", 4))
         ucrPnlOrder.AddRadioButton(rdoDateOrder, "TRUE")
         ucrPnlOrder.AddRadioButton(rdoElementOrder, "FALSE")
-        ucrPnlOrder.SetRDefault("FALSE")
+        ucrPnlOrder.SetRDefault("TRUE")
 
         ucrChkFlipCoordinates.SetParameter(New RParameter("coord_flip", 4))
         ucrChkFlipCoordinates.SetText("Flip Coordinates")
@@ -156,14 +170,14 @@ Public Class dlgInventoryPlot
         ucrSaveGraph.SetPrefix("inventory")
         ucrSaveGraph.SetSaveTypeAsGraph()
         ucrSaveGraph.SetDataFrameSelector(ucrInventoryPlotSelector.ucrAvailableDataFrames)
-        ucrSaveGraph.SetCheckBoxText("Save Graph")
+        ucrSaveGraph.SetCheckBoxText("Store Graph")
         ucrSaveGraph.SetIsComboBox()
         ucrSaveGraph.SetAssignToIfUncheckedValue("last_graph")
 
         ucrPnlOptions.AddRadioButton(rdoMissing)
         ucrPnlOptions.AddRadioButton(rdoGraph)
-        ucrPnlOptions.AddRSyntaxContainsFunctionNamesCondition(rdoMissing, {"climatic_missing", "climatic_details"})
-        ucrPnlOptions.AddRSyntaxContainsFunctionNamesCondition(rdoGraph, {frmMain.clsRLink.strInstatDataObject & "$make_inventory_plot"})
+        ucrPnlOptions.AddParameterValuesCondition(rdoMissing, "checked", "missing")
+        ucrPnlOptions.AddParameterValuesCondition(rdoGraph, "checked", "graph")
 
         ucrPnlOptions.AddToLinkedControls({ucrChkDisplayRainDays, ucrChkFlipCoordinates, ucrChkShowNonMissing, ucrPnlPlotType, ucrSaveGraph, ucrInputTitle, ucrInputFacetBy}, {rdoGraph}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True)
         ucrPnlOptions.AddToLinkedControls({ucrChkSummary, ucrChkDetails}, {rdoMissing}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True)
@@ -185,12 +199,26 @@ Public Class dlgInventoryPlot
         clsInventoryPlot = New RFunction
         clsClimaticMissing = New RFunction
         clsClimaticDetails = New RFunction
+        clsDummyFunction = New RFunction
+        clsAddKeyFunction = New RFunction
+        clsNewCAddKeyFunction = New RFunction
+        clsDataFrameFunction = New RFunction
+        clsGetDataNamesFunction = New RFunction
+        clsUpdatedDataNamesFunction = New RFunction
+        clsSetDiffFunction = New RFunction
+        clsAddColumnsFunction = New RFunction
+        clsConvertColumnToTypeFunction = New RFunction
+        clsBracketOperator = New ROperator
+
+        bResetSubdialog = True
 
         ucrInventoryPlotSelector.Reset()
         ucrReceiverElements.SetMeAsReceiver()
         ucrSaveGraph.Reset()
         ucrSaveDetails.Reset()
-        bResetSubdialog = True
+
+        clsDummyFunction.AddParameter("checked", "graph", iPosition:=0)
+        clsDummyFunction.AddParameter("summary", "True", iPosition:=1)
 
         clsInventoryPlot.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$make_inventory_plot")
         clsInventoryPlot.AddParameter("coord_flip", "FALSE", iPosition:=4)
@@ -198,15 +226,59 @@ Public Class dlgInventoryPlot
         clsInventoryPlot.AddParameter("facet_by", "NULL", iPosition:=8)
         clsInventoryPlot.SetAssignTo("last_graph", strTempDataframe:=ucrInventoryPlotSelector.ucrAvailableDataFrames.cboAvailableDataFrames.Text, strTempGraph:="last_graph")
 
+        clsClimaticMissing.SetPackageName("instatClimatic")
         clsClimaticMissing.SetRCommand("climatic_missing")
+        clsClimaticDetails.SetPackageName("instatClimatic")
         clsClimaticDetails.SetRCommand("climatic_details")
-        clsClimaticDetails.SetAssignTo("last_details", strTempDataframe:=ucrInventoryPlotSelector.ucrAvailableDataFrames.cboAvailableDataFrames.Text, strDataFrameNames:="last_details")
+        clsClimaticDetails.SetAssignTo("detail")
+
+        clsNewCAddKeyFunction.SetRCommand("c")
+        clsNewCAddKeyFunction.AddParameter("from", Chr(34) & "From" & Chr(34), bIncludeArgumentName:=False, iPosition:=1)
+        clsNewCAddKeyFunction.AddParameter("station", ucrReceiverStation.GetVariableNames(), bIncludeArgumentName:=False, iPosition:=2)
+        clsNewCAddKeyFunction.AddParameter("elements", Chr(34) & "Element" & Chr(34), bIncludeArgumentName:=False, iPosition:=3)
+        clsNewCAddKeyFunction.AddParameter("levels", Chr(34) & "Level" & Chr(34), bIncludeArgumentName:=False, iPosition:=4)
+        clsNewCAddKeyFunction.SetAssignTo("key_cols")
+
+        clsAddKeyFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$add_key")
+        clsAddKeyFunction.AddParameter("col_names", "key_cols", iPosition:=1)
+
+        clsGetDataNamesFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_data_names")
+        clsGetDataNamesFunction.SetAssignTo("existing_dfs")
+
+        clsUpdatedDataNamesFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_data_names")
+
+        clsSetDiffFunction.SetRCommand("setdiff")
+        clsSetDiffFunction.AddParameter("x", clsRFunctionParameter:=clsUpdatedDataNamesFunction, iPosition:=0, bIncludeArgumentName:=False)
+        clsSetDiffFunction.AddParameter("y", "existing_dfs", iPosition:=1, bIncludeArgumentName:=False)
+
+        clsBracketOperator.SetOperation("[")
+        clsBracketOperator.AddParameter("x", clsRFunctionParameter:=clsSetDiffFunction, iPosition:=0, bIncludeArgumentName:=False)
+        clsBracketOperator.AddParameter("y", "1]", iPosition:=1, bIncludeArgumentName:=False)
+        clsBracketOperator.bSpaceAroundOperation = False
+        clsBracketOperator.SetAssignTo(ucrSaveDetails.GetText())
+
+        clsAddColumnsFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$add_columns_to_data")
+        clsAddColumnsFunction.AddParameter("data_name", clsROperatorParameter:=clsBracketOperator, iPosition:=0)
+        clsAddColumnsFunction.AddParameter("before", "FALSE", iPosition:=1)
+        clsAddColumnsFunction.AddParameter("col_data", "NA_real_", iPosition:=2)
+        clsAddColumnsFunction.AddParameter("col_name", Chr(34) & "comment" & Chr(34), iPosition:=3)
+        clsAddColumnsFunction.AddParameter("use_col_name_as_prefix", "TRUE", iPosition:=4)
+
+        clsConvertColumnToTypeFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$convert_column_to_type")
+        clsConvertColumnToTypeFunction.AddParameter("data_name", Chr(34) & ucrSaveDetails.GetText() & Chr(34), iPosition:=0)
+        clsConvertColumnToTypeFunction.AddParameter("col_names", Chr(34) & "comment" & Chr(34), iPosition:=1)
+        clsConvertColumnToTypeFunction.AddParameter("to_type", Chr(34) & "character" & Chr(34), iPosition:=2)
+
+        clsDataFrameFunction.SetRCommand("data.frame")
+        clsDataFrameFunction.AddParameter("x", clsRFunctionParameter:=clsClimaticDetails, bIncludeArgumentName:=False, iPosition:=0)
+        clsDataFrameFunction.SetAssignTo("last_details", strTempDataframe:=ucrInventoryPlotSelector.ucrAvailableDataFrames.cboAvailableDataFrames.Text, strDataFrameNames:="last_details")
 
         ucrBase.clsRsyntax.ClearCodes()
         ucrBase.clsRsyntax.AddToBeforeCodes(clsInventoryPlot, iPosition:=0)
+
         clsInventoryPlot.iCallType = 3
         clsInventoryPlot.bExcludeAssignedFunctionOutput = False
-
+        EnableDisableHierachicalOption()
     End Sub
 
     Private Sub SetRCodeForControls(bReset As Boolean)
@@ -222,7 +294,6 @@ Public Class dlgInventoryPlot
 
         ucrInventoryPlotSelector.SetRCode(clsInventoryPlot, bReset)
         ucrReceiverDate.SetRCode(clsInventoryPlot, bReset)
-        ucrReceiverElements.SetRCode(clsInventoryPlot, bReset)
         ucrChkFlipCoordinates.SetRCode(clsInventoryPlot, bReset)
         ucrInputTitle.SetRCode(clsInventoryPlot, bReset)
         ucrChkDisplayRainDays.SetRCode(clsInventoryPlot, bReset)
@@ -231,17 +302,20 @@ Public Class dlgInventoryPlot
         ucrInputFacetBy.SetRCode(clsInventoryPlot, bReset)
         ucrSaveGraph.SetRCode(clsInventoryPlot, bReset)
         ucrReceiverStation.SetRCode(clsInventoryPlot, bReset)
-        ucrChkSummary.SetRSyntax(ucrBase.clsRsyntax, bReset)
-        ucrChkDetails.SetRSyntax(ucrBase.clsRsyntax, bReset)
         ucrChkYear.SetRCode(clsClimaticDetails, bReset)
         ucrChkMonth.SetRCode(clsClimaticDetails, bReset)
         ucrChkDay.SetRCode(clsClimaticDetails, bReset)
-        ucrSaveDetails.SetRCode(clsClimaticDetails, bReset)
+        ucrChkHierarchal.SetRCode(clsClimaticDetails, bReset)
+        ucrSaveDetails.SetRCode(clsDataFrameFunction, bReset)
         ucrChkOmitStart.SetRCode(clsClimaticMissing, bReset)
         ucrChkOmitEnd.SetRCode(clsClimaticMissing, bReset)
         ucrPnlOrder.SetRCode(clsClimaticDetails, bReset)
-        ucrPnlOptions.SetRSyntax(ucrBase.clsRsyntax, bReset)
-
+        If bReset Then
+            ucrPnlOptions.SetRCode(clsDummyFunction, bReset)
+            ucrChkSummary.SetRCode(clsDummyFunction, bReset)
+            ucrReceiverElements.SetRCode(clsInventoryPlot, bReset)
+            ucrChkDetails.SetRSyntax(ucrBase.clsRsyntax, bReset)
+        End If
     End Sub
 
     Private Sub TestOkEnabled()
@@ -275,17 +349,16 @@ Public Class dlgInventoryPlot
 
     End Sub
 
-    Private Sub cmdOptions_Click(sender As Object, e As EventArgs)
-        'there needs to be work on sdgplots before this could be linked 
-        'sdgPlots.SetRSyntax(ucrBase.clsRsyntax)
-        'sdgPlots.ShowDialog()
-    End Sub
+    'Private Sub cmdOptions_Click(sender As Object, e As EventArgs)
+    '    'there needs to be work on sdgplots before this could be linked 
+    '    'sdgPlots.SetRSyntax(ucrBase.clsRsyntax)
+    '    'sdgPlots.ShowDialog()
+    'End Sub
 
     Private Sub ucrBase_ClickReset(sender As Object, e As EventArgs) Handles ucrBase.ClickReset
         SetDefaults()
         SetRCodeForControls(True)
         TestOkEnabled()
-
     End Sub
 
     Private Sub ucrPnlOptions_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrPnlOptions.ControlValueChanged
@@ -294,6 +367,9 @@ Public Class dlgInventoryPlot
             ucrReceiverDate.SetParameterIsRFunction()
             ucrInventoryPlotSelector.SetParameterIsrfunction()
             ucrBase.clsRsyntax.RemoveFromBeforeCodes(clsInventoryPlot)
+            AddOrRemoveKeyFunctions()
+            AddOrRemoveSaveDetailFunctions()
+            AddOrRemoveDataFrameFunction()
         ElseIf rdoGraph.Checked Then
             ucrReceiverStation.SetParameterIsString()
             ucrReceiverDate.SetParameterIsString()
@@ -303,28 +379,61 @@ Public Class dlgInventoryPlot
             clsInventoryPlot.iCallType = 3
             clsInventoryPlot.bExcludeAssignedFunctionOutput = False
         End If
-
+        AddClimateMissingFunction()
     End Sub
 
-    Private Sub ucrChkSummary_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkSummary.ControlValueChanged
-        If ucrChkSummary.Checked Then
+    Private Sub EnableDisableHierachicalOption()
+        If (ucrChkYear.Checked AndAlso ucrChkDay.Checked) OrElse (ucrChkYear.Checked AndAlso ucrChkMonth.Checked) OrElse (ucrChkDay.Checked AndAlso ucrChkMonth.Checked) Then
+            ucrChkHierarchal.Enabled = True
+        Else
+            ucrChkHierarchal.Enabled = False
+        End If
+    End Sub
+
+    Private Sub DetailOptions_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkMonth.ControlValueChanged, ucrChkDay.ControlValueChanged, ucrChkYear.ControlValueChanged
+        EnableDisableHierachicalOption()
+    End Sub
+
+    Private Sub AddOrRemoveKeyFunctions()
+        If ucrSaveDetails.ucrChkSave.Checked AndAlso Not ucrReceiverStation.IsEmpty Then
+            ucrBase.clsRsyntax.AddToAfterCodes(clsNewCAddKeyFunction, iPosition:=4)
+            ucrBase.clsRsyntax.AddToAfterCodes(clsAddKeyFunction, iPosition:=5)
+        Else
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsAddKeyFunction)
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsNewCAddKeyFunction)
+        End If
+    End Sub
+
+    Private Sub AddClimateMissingFunction()
+        If rdoMissing.Checked AndAlso ucrChkSummary.Checked Then
             ucrBase.clsRsyntax.AddToAfterCodes(clsClimaticMissing, iPosition:=1)
             clsClimaticMissing.iCallType = 2
         Else
             ucrBase.clsRsyntax.RemoveFromAfterCodes(clsClimaticMissing)
         End If
+    End Sub
 
+    Private Sub ucrChkSummary_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkSummary.ControlValueChanged, ucrChkOmitEnd.ControlValueChanged, ucrChkOmitStart.ControlValueChanged
+        AddClimateMissingFunction()
+        AddOrRemoveKeyFunctions()
     End Sub
 
     Private Sub ucrChkDetails_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrChkDetails.ControlValueChanged
+        AddOrRemoveDataFrameFunction()
+    End Sub
+
+    Private Sub AddOrRemoveDataFrameFunction()
         If ucrChkDetails.Checked Then
-            ucrBase.clsRsyntax.AddToAfterCodes(clsClimaticDetails, iPosition:=2)
+            ucrBase.clsRsyntax.AddToAfterCodes(clsDataFrameFunction, iPosition:=2)
             clsClimaticDetails.iCallType = 2
         Else
-            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsClimaticDetails)
+            ucrBase.clsRsyntax.RemoveFromBeforeCodes(clsGetDataNamesFunction)
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsAddColumnsFunction)
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsConvertColumnToTypeFunction)
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsDataFrameFunction)
         End If
-
     End Sub
+
 
     Private Sub ucrBase_ClickClose(sender As Object, e As EventArgs) Handles ucrBase.ClickClose, Me.Closing
         If rdoMissing.Checked AndAlso Not (ucrChkSummary.Checked OrElse ucrChkDetails.Checked) Then
@@ -342,7 +451,48 @@ Public Class dlgInventoryPlot
 
     Private Sub AllControls_ControlContentsChanged(ucrChangedControl As ucrCore) Handles ucrSaveGraph.ControlContentsChanged, ucrSaveDetails.ControlContentsChanged, ucrReceiverElements.ControlContentsChanged, ucrReceiverDate.ControlContentsChanged, ucrChkSummary.ControlContentsChanged, ucrChkDetails.ControlContentsChanged, ucrChkYear.ControlContentsChanged, ucrChkMonth.ControlContentsChanged, ucrChkDay.ControlContentsChanged, ucrChkHour.ControlContentsChanged, ucrChkMinute.ControlContentsChanged, ucrChkSecond.ControlContentsChanged, ucrPnlOptions.ControlContentsChanged
         TestOkEnabled()
+    End Sub
 
+    Private Sub ucrReceiverStation_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrReceiverStation.ControlValueChanged
+        clsNewCAddKeyFunction.AddParameter("station", ucrReceiverStation.GetVariableNames(), bIncludeArgumentName:=False, iPosition:=2)
+        AddOrRemoveKeyFunctions()
+    End Sub
+
+    Private Sub ucrSaveDetails_ControlValueChanged(ucrChangedControl As ucrCore) Handles ucrSaveDetails.ControlValueChanged
+        AddOrRemoveKeyFunctions()
+        If ucrSaveDetails.IsComplete Then
+            clsAddKeyFunction.AddParameter("data_name", Chr(34) & ucrSaveDetails.GetText & Chr(34), iPosition:=0)
+        Else
+            clsAddKeyFunction.RemoveParameterByName("data_name")
+        End If
+        AddOrRemoveSaveDetailFunctions()
+        If ucrSaveDetails.ucrChkSave.Checked Then
+            clsBracketOperator.SetAssignTo(ucrSaveDetails.GetText())
+            clsConvertColumnToTypeFunction.AddParameter("data_name", Chr(34) & ucrSaveDetails.GetText() & Chr(34), iPosition:=0)
+            clsDataFrameFunction.SetAssignTo(ucrSaveDetails.GetText())
+            clsDataFrameFunction.iCallType = 0
+        Else
+            clsDataFrameFunction.RemoveAssignTo()
+            clsDataFrameFunction.iCallType = 2
+        End If
+    End Sub
+
+    Private Sub AddOrRemoveSaveDetailFunctions()
+        If ucrSaveDetails.ucrChkSave.Checked Then
+            ucrBase.clsRsyntax.AddToBeforeCodes(clsGetDataNamesFunction, iPosition:=0)
+            ucrBase.clsRsyntax.AddToAfterCodes(clsAddColumnsFunction, iPosition:=6)
+            ucrBase.clsRsyntax.AddToAfterCodes(clsConvertColumnToTypeFunction, iPosition:=7)
+        Else
+            ucrBase.clsRsyntax.RemoveFromBeforeCodes(clsGetDataNamesFunction)
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsAddColumnsFunction)
+            ucrBase.clsRsyntax.RemoveFromAfterCodes(clsConvertColumnToTypeFunction)
+        End If
+    End Sub
+
+    Private Sub cmdOptions_Click(sender As Object, e As EventArgs) Handles cmdOptions.Click
+        sdgInventoryOptions.SetRCode(clsNewInventoryFunction:=clsInventoryPlot, bReset:=bResetSubdialog)
+        sdgInventoryOptions.ShowDialog()
+        bResetSubdialog = False
     End Sub
 
 End Class

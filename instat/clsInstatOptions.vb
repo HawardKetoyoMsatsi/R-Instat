@@ -13,7 +13,8 @@
 '
 ' You should have received a copy of the GNU General Public License 
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+Imports instat
+Imports instat.Translations
 Imports System.Threading
 Imports System.Globalization
 Imports unvell.ReoGrid
@@ -30,12 +31,17 @@ Imports RDotNet
     Public bIncludeRDefaultParameters As Nullable(Of Boolean)
     Public iPreviewRows As Nullable(Of Integer)
     Public iMaxRows As Nullable(Of Integer)
+    Public iMaxWidth As Nullable(Of Integer)
     Public iMaxCols As Nullable(Of Integer)
+    Public iUndoColLimit As Nullable(Of Integer)
+    Public iUndoRowLimit As Nullable(Of Integer)
     Public lstColourPalette As List(Of Color)
     Public strGraphDisplayOption As String
     Public bCommandsinOutput As Nullable(Of Boolean)
     Public bIncludeCommentDefault As Nullable(Of Boolean) 'sets the default for comments on the dialog
     Public bShowProcurementMenu As Nullable(Of Boolean)
+    Public bShowTricotMenu As Nullable(Of Boolean)
+    Public bShowTricotXpMenu As Nullable(Of Boolean)
     Public bShowStructuredMenu As Nullable(Of Boolean)
     Public bShowClimaticMenu As Nullable(Of Boolean)
     Public bShowOptionsByContextMenu As Nullable(Of Boolean)
@@ -43,6 +49,8 @@ Imports RDotNet
     Public bShowSignifStars As Nullable(Of Boolean)
     Public bChangeDataFrame As Nullable(Of Boolean)
     Public bAutoSaveData As Nullable(Of Boolean)
+    Public bSwitchOffUndo As Nullable(Of Boolean)
+    Public bUndoSwitchAction As Nullable(Of Boolean)
     Public iAutoSaveDataMinutes As Nullable(Of Integer)
     Public bShowWaitDialog As Nullable(Of Boolean)
     Public iWaitTimeDelaySeconds As Nullable(Of Integer)
@@ -51,15 +59,20 @@ Imports RDotNet
     Public strClimsoftHost As String
     Public strClimsoftPort As String
     Public strClimsoftUsername As String
+    Public iMaxOutputsHeight As Nullable(Of Integer)
+    Public bRemindLaterOption As Nullable(Of Boolean)
 
     Public Sub New(Optional bSetOptions As Boolean = True)
         'TODO Is this sensible to do in constructor?
         bIncludeRDefaultParameters = clsInstatOptionsDefaults.DEFAULTbIncludeRDefaultParameters
         bCommandsinOutput = clsInstatOptionsDefaults.DEFAULTbCommandsinOutput
+        bRemindLaterOption = clsInstatOptionsDefaults.DEFAULTbRemindLaterOption
         bIncludeCommentDefault = clsInstatOptionsDefaults.DEFAULTbIncludeCommentDefault
         bShowClimaticMenu = clsInstatOptionsDefaults.DEFAULTbShowClimaticMenu
         bShowStructuredMenu = clsInstatOptionsDefaults.DEFAULTbShowStructuredMenu
         bShowProcurementMenu = clsInstatOptionsDefaults.DEFAULTbShowProcurementMenu
+        bShowTricotMenu = clsInstatOptionsDefaults.DEFAULTbShowTricotMenu
+        bShowTricotXpMenu = clsInstatOptionsDefaults.DEFAULTbShowTricotXpMenu
         bShowOptionsByContextMenu = clsInstatOptionsDefaults.DEFAULTbShowOptionsByContextMenu
         fntOutput = clsInstatOptionsDefaults.DEFAULTfntOutput
         clrOutput = clsInstatOptionsDefaults.DEFAULTclrOutput
@@ -71,8 +84,11 @@ Imports RDotNet
         clrEditor = clsInstatOptionsDefaults.DEFAULTclrEditor
         iPreviewRows = clsInstatOptionsDefaults.DEFAULTiPreviewRows
         iMaxRows = clsInstatOptionsDefaults.DEFAULTiMaxRows
+        iMaxWidth = clsInstatOptionsDefaults.DEFAULTiMaxWidth
         iMaxCols = clsInstatOptionsDefaults.DEFAULTiMaxCols
-        strComment = clsInstatOptionsDefaults.DEFAULTstrComment
+        iUndoColLimit = clsInstatOptionsDefaults.DEFAULTiUndoColLimit
+        iUndoRowLimit = clsInstatOptionsDefaults.DEFAULTiUndoRowLimit
+        strComment = Translations.GetTranslation(clsInstatOptionsDefaults.DEFAULTstrComment)
         strGraphDisplayOption = clsInstatOptionsDefaults.DEFAULTstrGraphDisplayOption
         strLanguageCultureCode = clsInstatOptionsDefaults.DEFAULTstrLanguageCultureCode
         strWorkingDirectory = clsInstatOptionsDefaults.DEFAULTstrWorkingDirectory
@@ -81,6 +97,7 @@ Imports RDotNet
         bShowSignifStars = clsInstatOptionsDefaults.DEFAULTbShowSignifStars
         bChangeDataFrame = clsInstatOptionsDefaults.DEFAULTbChangeDataFrame
         bAutoSaveData = clsInstatOptionsDefaults.DEFAULTbAutoSaveData
+        bSwitchOffUndo = clsInstatOptionsDefaults.DEFAULTbSwitchOffUndo
         iAutoSaveDataMinutes = clsInstatOptionsDefaults.DEFAULTiAutoSaveDataMinutes
         bShowWaitDialog = clsInstatOptionsDefaults.DEFAULTbShowWaitDialog
         iWaitTimeDelaySeconds = clsInstatOptionsDefaults.DEFAULTiWaitTimeDelaySeconds
@@ -89,12 +106,16 @@ Imports RDotNet
         strClimsoftHost = clsInstatOptionsDefaults.DEFAULTstrClimsoftHost
         strClimsoftPort = clsInstatOptionsDefaults.DEFAULTstrClimsoftPort
         strClimsoftUsername = clsInstatOptionsDefaults.DEFAULTstrClimsoftUsername
+        iMaxOutputsHeight = clsInstatOptionsDefaults.DEFAULTiMaxOutputsHeight
         If bSetOptions Then
-            SetOptions()
+            SetDefaultValuesToOptionsNotSet()
         End If
     End Sub
 
-    Public Sub SetOptions()
+    ''' <summary>
+    ''' sets the default values to options that have not been set with values
+    ''' </summary>
+    Public Sub SetDefaultValuesToOptionsNotSet()
         If fntOutput IsNot Nothing AndAlso clrOutput <> Color.Empty Then
             SetFormatOutput(fntOutput, clrOutput)
         Else
@@ -131,10 +152,28 @@ Imports RDotNet
             SetMaxRows(clsInstatOptionsDefaults.DEFAULTiMaxRows)
         End If
 
+        If iMaxWidth.HasValue Then
+            SetMaxWidth(iMaxWidth)
+        Else
+            SetMaxWidth(clsInstatOptionsDefaults.DEFAULTiMaxWidth)
+        End If
+
         If iMaxCols.HasValue Then
             SetMaxCols(iMaxCols)
         Else
             SetMaxCols(clsInstatOptionsDefaults.DEFAULTiMaxCols)
+        End If
+
+        If iUndoColLimit.HasValue Then
+            SetUndoColLimit(iUndoColLimit)
+        Else
+            SetUndoColLimit(clsInstatOptionsDefaults.DEFAULTiUndoColLimit)
+        End If
+
+        If iUndoRowLimit.HasValue Then
+            SetUndoRowLimit(iUndoRowLimit)
+        Else
+            SetUndoRowLimit(clsInstatOptionsDefaults.DEFAULTiUndoRowLimit)
         End If
 
         If bCommandsinOutput.HasValue Then
@@ -143,10 +182,14 @@ Imports RDotNet
             SetCommandInOutpt(clsInstatOptionsDefaults.DEFAULTbCommandsinOutput)
         End If
 
-        If strComment IsNot Nothing Then
-            SetComment(strComment)
+        If bRemindLaterOption.HasValue Then
+            SetRemindLaterOption(bRemindLaterOption)
         Else
-            SetComment(clsInstatOptionsDefaults.DEFAULTstrComment)
+            SetRemindLaterOption(clsInstatOptionsDefaults.DEFAULTbRemindLaterOption)
+        End If
+
+        If strComment Is Nothing Then
+            SetComment(Translations.GetTranslation(clsInstatOptionsDefaults.DEFAULTstrComment))
         End If
 
         If strGraphDisplayOption IsNot Nothing Then
@@ -197,6 +240,18 @@ Imports RDotNet
             SetShowOptionsByContextMenu(clsInstatOptionsDefaults.DEFAULTbShowOptionsByContextMenu)
         End If
 
+        If bShowTricotMenu.HasValue Then
+            SetShowTricotMenu(bShowTricotMenu)
+        Else
+            SetShowTricotMenu(clsInstatOptionsDefaults.DEFAULTbShowTricotMenu)
+        End If
+
+        If bShowTricotXpMenu.HasValue Then
+            SetShowTricotXpMenu(bShowTricotXpMenu)
+        Else
+            SetShowTricotXpMenu(clsInstatOptionsDefaults.DEFAULTbShowTricotXpMenu)
+        End If
+
         If bShowProcurementMenu.HasValue Then
             SetShowProcurementMenu(bShowProcurementMenu)
         Else
@@ -231,6 +286,12 @@ Imports RDotNet
             SetAutoSaveData(bAutoSaveData)
         Else
             SetAutoSaveData(clsInstatOptionsDefaults.DEFAULTbAutoSaveData)
+        End If
+
+        If bSwitchOffUndo.HasValue Then
+            SetOffUndo(bSwitchOffUndo)
+        Else
+            SetOffUndo(clsInstatOptionsDefaults.DEFAULTbSwitchOffUndo)
         End If
 
         If iAutoSaveDataMinutes.HasValue Then
@@ -280,6 +341,82 @@ Imports RDotNet
         Else
             SetClimsoftUsername(clsInstatOptionsDefaults.DEFAULTstrClimsoftUsername)
         End If
+
+        SetMaximumOutputsHeight(If(iMaxOutputsHeight Is Nothing, clsInstatOptionsDefaults.DEFAULTiMaxOutputsHeight, iMaxOutputsHeight))
+
+    End Sub
+
+    ''' <summary>
+    ''' executes the set R options if they have been changed or not set in the R environment
+    ''' </summary>
+    Public Sub ExecuteRGlobalOptions()
+        Dim clsOptionsFunction As New RFunction
+        Dim strROption As String
+
+        clsOptionsFunction.SetRCommand("options")
+
+        'add "digits" as options parameter of its been changed
+        strROption = GetROption("digits")
+        If strROption Is Nothing OrElse strROption <> iDigits.ToString Then
+            clsOptionsFunction.AddParameter("digits", iDigits)
+        End If
+
+        'add "show.signif.stars" as options parameter of its been changed
+        strROption = GetROption("show.signif.stars")
+        If strROption Is Nothing OrElse strROption <> bShowSignifStars.ToString Then
+            clsOptionsFunction.AddParameter("show.signif.stars", If(bShowSignifStars, "TRUE", "FALSE"))
+        End If
+
+        'add "dplyr.summarise.inform"" as options parameter of it was not set as FALSE
+        strROption = GetROption("dplyr.summarise.inform")
+        If strROption Is Nothing OrElse strROption <> False.ToString Then
+            clsOptionsFunction.AddParameter("dplyr.summarise.inform", "FALSE")
+        End If
+
+        strROption = GetROption("width")
+        If strROption Is Nothing OrElse strROption <> iMaxWidth.ToString Then
+            clsOptionsFunction.AddParameter("width", iMaxWidth)
+        End If
+
+        'add "R.commands.displayed.in.the.output.window" as options parameter of its been changed
+        If frmMain.mnuShowRCommand.Checked Then
+            clsOptionsFunction.AddParameter("R.commands.displayed.in.the.output.window", "TRUE")
+        Else
+            clsOptionsFunction.AddParameter("R.commands.displayed.in.the.output.window", "FALSE")
+        End If
+
+        'add "Comments.from.dialogs.displayed.in.the.output.window" as options parameter of its been changed
+        If frmMain.mnuIncludeComments.Checked Then
+            clsOptionsFunction.AddParameter("Comments.from.dialogs.displayed.in.the.output.window", "TRUE")
+        Else
+            clsOptionsFunction.AddParameter("Comments.from.dialogs.displayed.in.the.output.window", "FALSE")
+        End If
+
+        frmMain.clsRLink.RunScript(clsOptionsFunction.ToScript(),
+                                   strComment:="Setting display options (e.g Number of significant digits)")
+
+    End Sub
+
+    ''' <summary>
+    ''' gets an option from R environment if it's been set
+    ''' </summary>
+    ''' <param name="strOptionName"></param>
+    ''' <returns>string representation of the R option</returns>
+    Private Function GetROption(strOptionName As String) As String
+        Dim expression As SymbolicExpression
+        Dim clsGetOptionFunction As New RFunction
+        clsGetOptionFunction.SetRCommand("getOption")
+        clsGetOptionFunction.AddParameter("x", Chr(34) & strOptionName & Chr(34))
+        expression = frmMain.clsRLink.RunInternalScriptGetValue(clsGetOptionFunction.ToScript(), bSilent:=True)
+        Return If(expression Is Nothing OrElse expression.Type = Internals.SymbolicExpressionType.Null, Nothing, expression.AsCharacter(0))
+    End Function
+
+    Public Sub SetUndoColLimit(iNewUndoColLimit As Integer)
+        iUndoColLimit = iNewUndoColLimit
+    End Sub
+
+    Public Sub SetUndoRowLimit(iNewUndoRowLimit As Integer)
+        iUndoRowLimit = iNewUndoRowLimit
     End Sub
 
     Public Sub SetMaxRows(iRows As Integer)
@@ -287,6 +424,10 @@ Imports RDotNet
         frmMain.UpdateAllGrids()
     End Sub
 
+    Public Sub SetMaxWidth(iNewMaxWidth As Integer)
+        iMaxWidth = iNewMaxWidth
+        'frmMain.UpdateAllGrids()
+    End Sub
     Public Sub SetMaxCols(iCols As Integer)
         iMaxCols = iCols
         frmMain.UpdateAllGrids()
@@ -310,7 +451,6 @@ Imports RDotNet
         OutputFont.RBracketFont = fntNew
         OutputFont.RSeparatorFont = fntNew
         OutputFont.REndStatementFont = fntNew
-        OutputFont.REndScriptFont = fntNew
         OutputFont.RNewLineFont = fntNew
         OutputFont.ROperatorUnaryLeftFont = fntNew
         OutputFont.ROperatorUnaryRightFont = fntNew
@@ -327,7 +467,6 @@ Imports RDotNet
         OutputFont.RBracketColour = clrNew
         OutputFont.RSeparatorColour = clrNew
         OutputFont.REndStatementColour = clrNew
-        OutputFont.REndScriptColour = clrNew
         OutputFont.RNewLineColour = clrNew
         OutputFont.ROperatorUnaryLeftColour = clrNew
         OutputFont.ROperatorUnaryRightColour = clrNew
@@ -384,7 +523,7 @@ Imports RDotNet
         strWorkingDirectory = strWD
         'This is done in R link setup. Need to rethink how this is done.
         'Commented out for now to not repeat.
-        'frmMain.clsRLink.RunScript(clsSetwdFunction.ToScript(), strComment:="Option: Setting working directory")
+        'frmMain.clsRLink.RunRScript(clsSetwdFunction.ToScript(), strComment:="Option: Setting working directory")
     End Sub
 
     Public Sub SetColorPalette(lstColours As List(Of Color))
@@ -397,6 +536,10 @@ Imports RDotNet
         frmMain.clsRLink.strGraphDisplayOption = strGraphDisplayOption
     End Sub
 
+    Public Sub SetRemindLaterOption(bRemind As Boolean)
+        bRemindLaterOption = bRemind
+    End Sub
+
     Public Sub SetCommandInOutpt(bCommand As Boolean)
         bCommandsinOutput = bCommand
         frmMain.clsRLink.bShowCommands = bCommandsinOutput
@@ -407,43 +550,15 @@ Imports RDotNet
     End Sub
 
     Public Sub SetDigits(iNewDigits As Integer)
-        Dim clsOptionsFunction As New RFunction
-        Dim clsGetOptionFunction As New RFunction
-        Dim expCurrDigits As SymbolicExpression
-
         If iNewDigits > 22 OrElse iNewDigits < 0 Then
-            MsgBox("Cannot set digits to: " & iNewDigits & ". Digits must be an integer between 0 and 22.", MsgBoxStyle.Critical, "Error setting digits")
+            MsgBoxTranslate("Cannot set digits to: " & iNewDigits & ". Digits must be an integer between 0 and 22.", MsgBoxStyle.Critical, "Error setting digits")
         Else
             iDigits = iNewDigits
-            clsGetOptionFunction.SetRCommand("getOption")
-            clsGetOptionFunction.AddParameter("x", Chr(34) & "digits" & Chr(34))
-            expCurrDigits = frmMain.clsRLink.RunInternalScriptGetValue(clsGetOptionFunction.ToScript(), bSilent:=True)
-            If (expCurrDigits IsNot Nothing AndAlso expCurrDigits.Type <> Internals.SymbolicExpressionType.Null AndAlso expCurrDigits.AsInteger(0) <> iDigits) OrElse expCurrDigits Is Nothing Then
-                clsOptionsFunction.SetRCommand("options")
-                clsOptionsFunction.AddParameter("digits", iDigits)
-                frmMain.clsRLink.RunScript(clsOptionsFunction.ToScript(), strComment:="Option: Number of digits to display")
-            End If
         End If
     End Sub
 
     Public Sub SetSignifStars(bShowStars As Boolean)
-        Dim clsOptionsFunction As New RFunction
-        Dim clsGetOptionsFunction As New RFunction
-        Dim expCurrStars As SymbolicExpression
-
         bShowSignifStars = bShowStars
-        clsGetOptionsFunction.SetRCommand("getOption")
-        clsGetOptionsFunction.AddParameter("x", Chr(34) & "show.signif.stars" & Chr(34))
-        clsOptionsFunction.SetRCommand("options")
-        expCurrStars = frmMain.clsRLink.RunInternalScriptGetValue(clsGetOptionsFunction.ToScript(), bSilent:=True)
-        If (expCurrStars IsNot Nothing AndAlso expCurrStars.Type <> Internals.SymbolicExpressionType.Null AndAlso expCurrStars.AsLogical(0) <> bShowSignifStars) OrElse expCurrStars Is Nothing Then
-            If bShowSignifStars Then
-                clsOptionsFunction.AddParameter("show.signif.stars", "TRUE")
-            Else
-                clsOptionsFunction.AddParameter("show.signif.stars", "FALSE")
-            End If
-            frmMain.clsRLink.RunScript(clsOptionsFunction.ToScript(), strComment:="Option: Show stars on summary tables of coefficients")
-        End If
     End Sub
 
     Public Sub SetChangeDataFrame(bNewChange As Boolean)
@@ -452,6 +567,16 @@ Imports RDotNet
 
     Public Sub SetIncludeCommentByDefault(bNewInclude As Boolean)
         bIncludeCommentDefault = bNewInclude
+    End Sub
+
+    Public Sub SetShowTricotMenu(bNewShowTricotMenu As Boolean)
+        bShowTricotMenu = bNewShowTricotMenu
+        frmMain.SetShowTricotMenu(bNewShowTricotMenu)
+    End Sub
+
+    Public Sub SetShowTricotXpMenu(bNewShowTricotXpMenu As Boolean)
+        bShowTricotXpMenu = bNewShowTricotXpMenu
+        frmMain.SetShowTricotXpMenu(bNewShowTricotXpMenu)
     End Sub
 
     Public Sub SetShowProcurementMenu(bNewShowProcurementMenu As Boolean)
@@ -480,6 +605,10 @@ Imports RDotNet
 
     Public Sub SetAutoSaveData(bNewAutoSave As Boolean)
         bAutoSaveData = bNewAutoSave
+    End Sub
+
+    Public Sub SetOffUndo(bNewSwitchOffUndo As Boolean)
+        bSwitchOffUndo = bNewSwitchOffUndo
     End Sub
 
     Public Sub SetAutoSaveDataMinutes(iNewMinutes As Integer)
@@ -517,4 +646,9 @@ Imports RDotNet
     Public Sub SetClimsoftUsername(strNewClimsoftUsername As String)
         strClimsoftUsername = strNewClimsoftUsername
     End Sub
+
+    Public Sub SetMaximumOutputsHeight(iNewMaxOutputsHeight As Integer)
+        iMaxOutputsHeight = iNewMaxOutputsHeight
+    End Sub
+
 End Class

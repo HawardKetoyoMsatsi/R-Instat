@@ -18,9 +18,16 @@ Imports instat.Translations
 Imports RDotNet
 
 Public Class dlgMergeAdditionalData
+    Public enumMergeMode As String = MergeMode.Prepare
+    Public Enum MergeMode
+        Prepare
+        Climatic
+        Tricot
+    End Enum
+
     Private bFirstLoad As Boolean = True
     Private bReset As Boolean = True
-    Private clsInsertColumnFunction, clsGetColumnsFromData As New RFunction
+    Private clsInsertColumnFunction, clsGetColumnsFromData, clsListFunction, clsImportDataFunction As New RFunction
     Private lstJoinColumns As New List(Of String)
     Private clsLeftJoinFunction As New RFunction
     Private clsByListFunction As New RFunction
@@ -39,12 +46,14 @@ Public Class dlgMergeAdditionalData
         End If
         SetRCodeforControls(bReset)
         bReset = False
+        SetHelpOptions()
         SetMergingBy()
         autoTranslate(Me)
         TestOkEnabled()
     End Sub
 
     Private Sub InitialiseDialog()
+        ucrBase.iHelpTopicID = 740
         ucrToDataFrame.SetParameter(New RParameter("x", 0))
         ucrToDataFrame.SetParameterIsRFunction()
         ucrToDataFrame.SetLabelText("To Data Frame:")
@@ -70,6 +79,8 @@ Public Class dlgMergeAdditionalData
         clsLeftJoinFunction = New RFunction
         clsByListFunction = New RFunction
         clsInsertColumnFunction = New RFunction
+        clsImportDataFunction = New RFunction
+        clsListFunction = New RFunction
         clsGetColumnsFromData = New RFunction
         clsGetVariablesFunction = New RFunction
 
@@ -90,7 +101,12 @@ Public Class dlgMergeAdditionalData
         clsGetColumnsFromData.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$get_columns_from_data")
         clsGetColumnsFromData.AddParameter("use_current_filter", "FALSE", iPosition:=2)
 
-        clsInsertColumnFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$add_columns_to_data")
+
+        clsListFunction.SetRCommand("list")
+
+        clsImportDataFunction.SetRCommand(frmMain.clsRLink.strInstatDataObject & "$import_data")
+        clsImportDataFunction.AddParameter("data_tables", clsRFunctionParameter:=clsListFunction, iPosition:=0)
+        clsImportDataFunction.AddParameter("prefix", "FALSE", iPosition:=1)
 
         SetDataFrameAssign()
         ucrBase.clsRsyntax.SetBaseRFunction(clsInsertColumnFunction)
@@ -101,6 +117,17 @@ Public Class dlgMergeAdditionalData
         ucrFromDataFrame.SetRCode(clsGetVariablesFunction, bResetControls)
         ucrToDataFrame.SetRCode(clsLeftJoinFunction, bResetControls)
         ucrChkSaveDataFrame.SetRCode(ucrBase.clsRsyntax.clsBaseFunction, bReset)
+    End Sub
+
+    Private Sub SetHelpOptions()
+        Select Case enumMergeMode
+            Case MergeMode.Prepare
+                ucrBase.iHelpTopicID = 186
+            Case MergeMode.Climatic
+                ucrBase.iHelpTopicID = 609
+            Case MergeMode.Tricot
+                ucrBase.iHelpTopicID = 740
+        End Select
     End Sub
 
     Private Sub TestOkEnabled()
@@ -133,7 +160,8 @@ Public Class dlgMergeAdditionalData
 
     Private Sub SetDataFrameAssign()
         If clsLeftJoinFunction IsNot Nothing Then
-            If ucrToDataFrame.cboAvailableDataFrames.Text <> "" Then
+            Dim strParam As String = ucrToDataFrame.cboAvailableDataFrames.Text
+            If strParam <> "" Then
                 clsLeftJoinFunction.RemoveAssignTo()
                 If ucrChkSaveDataFrame.Checked Then
                     clsLeftJoinFunction.SetAssignTo(ucrInputSaveDataFrame.GetText, strTempDataframe:=ucrInputSaveDataFrame.GetText)
@@ -143,10 +171,10 @@ Public Class dlgMergeAdditionalData
                     cmdCheckUnique.Visible = False
                     SetInputCheckVisibility(False)
                 Else
-                    clsLeftJoinFunction.SetAssignTo(ucrToDataFrame.cboAvailableDataFrames.Text)
-                    clsInsertColumnFunction.AddParameter("data_name", Chr(34) & ucrToDataFrame.cboAvailableDataFrames.Text & Chr(34), iPosition:=0)
-                    clsInsertColumnFunction.AddParameter("col_data", clsRFunctionParameter:=clsLeftJoinFunction, iPosition:=1)
-                    ucrBase.clsRsyntax.SetBaseRFunction(clsInsertColumnFunction)
+                    clsLeftJoinFunction.SetAssignTo(strParam)
+                    clsListFunction.ClearParameters()
+                    clsListFunction.AddParameter(strParam, clsRFunctionParameter:=clsLeftJoinFunction, iPosition:=0)
+                    ucrBase.clsRsyntax.SetBaseRFunction(clsImportDataFunction)
                     ucrInputSaveDataFrame.Visible = False
                     cmdCheckUnique.Visible = True
                 End If
@@ -158,12 +186,12 @@ Public Class dlgMergeAdditionalData
     End Sub
 
     Private Sub SetMergingBy()
-        Dim lstJoiningColumns As New List(Of String)
+        Dim dctJoinColumns As New Dictionary(Of String, String)
         lstJoinColumns.Clear()
         If ucrFromDataFrame.ucrAvailableDataFrames.cboAvailableDataFrames.Text <> "" AndAlso ucrToDataFrame.cboAvailableDataFrames.Text <> "" Then
             If clsLeftJoinFunction.ContainsParameter("by") Then
                 For Each clsTempParam As RParameter In clsByListFunction.clsParameters
-                    lstJoiningColumns.Add(clsTempParam.strArgumentName.Trim(Chr(34)))
+                    dctJoinColumns.Add(clsTempParam.strArgumentName.Trim(Chr(34)), clsTempParam.strArgumentValue.Trim(Chr(34)))
                 Next
             Else
                 Dim lstFirstColumns As List(Of String)
@@ -173,7 +201,7 @@ Public Class dlgMergeAdditionalData
                 Dim i As Integer = 0
                 For Each strFirst As String In lstFirstColumns
                     If lstSecondColumns.Contains(strFirst) Then
-                        lstJoiningColumns.Add(strFirst)
+                        dctJoinColumns.Add(strFirst, strFirst)
                         clsByListFunction.AddParameter(Chr(34) & strFirst & Chr(34), Chr(34) & strFirst & Chr(34), iPosition:=i)
                         i += 1
                     End If
@@ -182,11 +210,11 @@ Public Class dlgMergeAdditionalData
                     clsLeftJoinFunction.AddParameter("by", clsRFunctionParameter:=clsByListFunction, iPosition:=2)
                 End If
             End If
-            If lstJoiningColumns.Count > 0 Then
+            If dctJoinColumns.Count > 0 Then
                 Dim lstJoinPairs As New List(Of String)
-                For Each kvpTemp As String In lstJoiningColumns
-                    lstJoinPairs.Add(kvpTemp & " = " & kvpTemp)
-                    lstJoinColumns.Add(kvpTemp)
+                For Each kvpTemp As KeyValuePair(Of String, String) In dctJoinColumns
+                    lstJoinPairs.Add(kvpTemp.Key & " = " & kvpTemp.Value)
+                    lstJoinColumns.Add(kvpTemp.Value)
                 Next
                 ucrInputMergingBy.SetName(String.Join(", ", lstJoinPairs))
                 ucrInputMergingBy.txtInput.BackColor = SystemColors.Control
@@ -203,7 +231,7 @@ Public Class dlgMergeAdditionalData
             clsLeftJoinFunction.RemoveParameterByName("by")
             clsByListFunction.ClearParameters()
         End If
-        bBySpecified = (lstJoiningColumns.Count > 0)
+        bBySpecified = (dctJoinColumns.Count > 0)
         TestOkEnabled()
     End Sub
 
@@ -236,7 +264,7 @@ Public Class dlgMergeAdditionalData
         Dim clsAnyDuplicatesFunction As New RFunction
         Dim iAnyDuplicated As Integer
 
-        If ucrInputMergingBy.GetText <> "" Then
+        If ucrInputMergingBy.GetText <> "" AndAlso lstJoinColumns.Count > 0 Then
             clsGetVariablesFunction.AddParameter("col_names", frmMain.clsRLink.GetListAsRString(lstJoinColumns, bWithQuotes:=True), iPosition:=1)
             clsAnyDuplicatesFunction.SetRCommand("anyDuplicated")
             clsAnyDuplicatesFunction.AddParameter("x", clsRFunctionParameter:=clsGetVariablesFunction)

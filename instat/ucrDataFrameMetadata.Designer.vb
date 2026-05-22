@@ -42,18 +42,20 @@ Partial Class ucrDataFrameMetadata
         Me.cellContextMenuStrip = New System.Windows.Forms.ContextMenuStrip(Me.components)
         Me.mnuHelp = New System.Windows.Forms.ToolStripMenuItem()
         Me.rowRightClickMenu = New System.Windows.Forms.ContextMenuStrip(Me.components)
-        Me.deleteDataFrame = New System.Windows.Forms.ToolStripMenuItem()
         Me.renameSheet = New System.Windows.Forms.ToolStripMenuItem()
-        Me.mnuAddComment = New System.Windows.Forms.ToolStripMenuItem()
+        Me.reorderSheet = New System.Windows.Forms.ToolStripMenuItem()
+        Me.copySheet = New System.Windows.Forms.ToolStripMenuItem()
+        Me.deleteDataFrame = New System.Windows.Forms.ToolStripMenuItem()
         Me.hideSheet = New System.Windows.Forms.ToolStripMenuItem()
         Me.unhideSheet = New System.Windows.Forms.ToolStripMenuItem()
-        Me.copySheet = New System.Windows.Forms.ToolStripMenuItem()
-        Me.reorderSheet = New System.Windows.Forms.ToolStripMenuItem()
-        Me.viewSheet = New System.Windows.Forms.ToolStripMenuItem()
+        Me.ToolStripSeparator11 = New System.Windows.Forms.ToolStripSeparator()
+        Me.mnuAddComment = New System.Windows.Forms.ToolStripMenuItem()
         Me.lblHeaderDataFrameMetaData = New System.Windows.Forms.Label()
         Me.tlpTableContainer = New System.Windows.Forms.TableLayoutPanel()
         Me.ucrLinuxGrid = New instat.ucrDataframeMetadataLinuxGrid()
         Me.ucrReoGrid = New instat.ucrDataframeMetadataReoGrid()
+        Me.HelpToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
+        Me.ToolStripSeparator1 = New System.Windows.Forms.ToolStripSeparator()
         Me.cellContextMenuStrip.SuspendLayout()
         Me.rowRightClickMenu.SuspendLayout()
         Me.tlpTableContainer.SuspendLayout()
@@ -75,58 +77,57 @@ Partial Class ucrDataFrameMetadata
         'rowRightClickMenu
         '
         Me.rowRightClickMenu.ImageScalingSize = New System.Drawing.Size(20, 20)
-        Me.rowRightClickMenu.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.deleteDataFrame, Me.renameSheet, Me.mnuAddComment, Me.hideSheet, Me.unhideSheet, Me.copySheet, Me.reorderSheet, Me.viewSheet})
+        Me.rowRightClickMenu.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.renameSheet, Me.reorderSheet, Me.copySheet, Me.deleteDataFrame, Me.hideSheet, Me.unhideSheet, Me.ToolStripSeparator1, Me.mnuAddComment, Me.ToolStripSeparator11, Me.HelpToolStripMenuItem})
         Me.rowRightClickMenu.Name = "statusColumnMenu"
-        Me.rowRightClickMenu.Size = New System.Drawing.Size(163, 180)
-        '
-        'deleteDataFrame
-        '
-        Me.deleteDataFrame.Name = "deleteDataFrame"
-        Me.deleteDataFrame.Size = New System.Drawing.Size(162, 22)
-        Me.deleteDataFrame.Text = "Delete..."
+        Me.rowRightClickMenu.Size = New System.Drawing.Size(181, 214)
         '
         'renameSheet
         '
         Me.renameSheet.Name = "renameSheet"
-        Me.renameSheet.Size = New System.Drawing.Size(162, 22)
+        Me.renameSheet.Size = New System.Drawing.Size(180, 22)
         Me.renameSheet.Text = "Rename..."
-        '
-        'mnuAddComment
-        '
-        Me.mnuAddComment.Name = "mnuAddComment"
-        Me.mnuAddComment.Size = New System.Drawing.Size(162, 22)
-        Me.mnuAddComment.Text = "Add Comment..."
-        '
-        'hideSheet
-        '
-        Me.hideSheet.Name = "hideSheet"
-        Me.hideSheet.Size = New System.Drawing.Size(162, 22)
-        Me.hideSheet.Text = "Hide"
-        '
-        'unhideSheet
-        '
-        Me.unhideSheet.Name = "unhideSheet"
-        Me.unhideSheet.Size = New System.Drawing.Size(162, 22)
-        Me.unhideSheet.Text = "Unhide..."
-        '
-        'copySheet
-        '
-        Me.copySheet.Name = "copySheet"
-        Me.copySheet.Size = New System.Drawing.Size(162, 22)
-        Me.copySheet.Text = "Copy..."
         '
         'reorderSheet
         '
         Me.reorderSheet.Enabled = False
         Me.reorderSheet.Name = "reorderSheet"
-        Me.reorderSheet.Size = New System.Drawing.Size(162, 22)
+        Me.reorderSheet.Size = New System.Drawing.Size(180, 22)
         Me.reorderSheet.Text = "Reorder..."
         '
-        'viewSheet
+        'copySheet
         '
-        Me.viewSheet.Name = "viewSheet"
-        Me.viewSheet.Size = New System.Drawing.Size(162, 22)
-        Me.viewSheet.Text = "View Data Frame"
+        Me.copySheet.Name = "copySheet"
+        Me.copySheet.Size = New System.Drawing.Size(180, 22)
+        Me.copySheet.Text = "Copy..."
+        '
+        'deleteDataFrame
+        '
+        Me.deleteDataFrame.Name = "deleteDataFrame"
+        Me.deleteDataFrame.Size = New System.Drawing.Size(180, 22)
+        Me.deleteDataFrame.Text = "Delete..."
+        '
+        'hideSheet
+        '
+        Me.hideSheet.Name = "hideSheet"
+        Me.hideSheet.Size = New System.Drawing.Size(180, 22)
+        Me.hideSheet.Text = "Hide"
+        '
+        'unhideSheet
+        '
+        Me.unhideSheet.Name = "unhideSheet"
+        Me.unhideSheet.Size = New System.Drawing.Size(180, 22)
+        Me.unhideSheet.Text = "Unhide..."
+        '
+        'ToolStripSeparator11
+        '
+        Me.ToolStripSeparator11.Name = "ToolStripSeparator11"
+        Me.ToolStripSeparator11.Size = New System.Drawing.Size(177, 6)
+        '
+        'mnuAddComment
+        '
+        Me.mnuAddComment.Name = "mnuAddComment"
+        Me.mnuAddComment.Size = New System.Drawing.Size(180, 22)
+        Me.mnuAddComment.Text = "Add Comment..."
         '
         'lblHeaderDataFrameMetaData
         '
@@ -178,6 +179,17 @@ Partial Class ucrDataFrameMetadata
         Me.ucrReoGrid.Size = New System.Drawing.Size(324, 381)
         Me.ucrReoGrid.TabIndex = 9
         '
+        'HelpToolStripMenuItem
+        '
+        Me.HelpToolStripMenuItem.Name = "HelpToolStripMenuItem"
+        Me.HelpToolStripMenuItem.Size = New System.Drawing.Size(180, 22)
+        Me.HelpToolStripMenuItem.Text = "Help"
+        '
+        'ToolStripSeparator1
+        '
+        Me.ToolStripSeparator1.Name = "ToolStripSeparator1"
+        Me.ToolStripSeparator1.Size = New System.Drawing.Size(177, 6)
+        '
         'ucrDataFrameMetadata
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(96.0!, 96.0!)
@@ -203,8 +215,10 @@ Partial Class ucrDataFrameMetadata
     Friend WithEvents unhideSheet As ToolStripMenuItem
     Friend WithEvents copySheet As ToolStripMenuItem
     Friend WithEvents reorderSheet As ToolStripMenuItem
-    Friend WithEvents viewSheet As ToolStripMenuItem
     Friend WithEvents mnuAddComment As ToolStripMenuItem
     Friend WithEvents ucrLinuxGrid As ucrDataframeMetadataLinuxGrid
     Friend WithEvents ucrReoGrid As ucrDataframeMetadataReoGrid
+    Friend WithEvents ToolStripSeparator11 As ToolStripSeparator
+    Friend WithEvents ToolStripSeparator1 As ToolStripSeparator
+    Friend WithEvents HelpToolStripMenuItem As ToolStripMenuItem
 End Class

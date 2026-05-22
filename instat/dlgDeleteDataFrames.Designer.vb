@@ -19,7 +19,7 @@ Partial Class dlgDeleteDataFrames
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
-    <System.Diagnostics.DebuggerNonUserCode()> _
+    <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Try
             If disposing AndAlso components IsNot Nothing Then
@@ -36,7 +36,7 @@ Partial Class dlgDeleteDataFrames
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
-    <System.Diagnostics.DebuggerStepThrough()> _
+    <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Me.lblDataframes = New System.Windows.Forms.Label()
         Me.lblAppendToDataframe = New System.Windows.Forms.Label()
@@ -57,7 +57,7 @@ Partial Class dlgDeleteDataFrames
         'lblAppendToDataframe
         '
         Me.lblAppendToDataframe.AutoSize = True
-        Me.lblAppendToDataframe.Location = New System.Drawing.Point(253, 17)
+        Me.lblAppendToDataframe.Location = New System.Drawing.Point(244, 17)
         Me.lblAppendToDataframe.Name = "lblAppendToDataframe"
         Me.lblAppendToDataframe.Size = New System.Drawing.Size(115, 13)
         Me.lblAppendToDataframe.TabIndex = 2
@@ -69,14 +69,14 @@ Partial Class dlgDeleteDataFrames
         Me.ucrBase.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
         Me.ucrBase.Location = New System.Drawing.Point(10, 177)
         Me.ucrBase.Name = "ucrBase"
-        Me.ucrBase.Size = New System.Drawing.Size(405, 52)
+        Me.ucrBase.Size = New System.Drawing.Size(408, 52)
         Me.ucrBase.TabIndex = 4
         '
         'ucrReceiverDataFrames
         '
         Me.ucrReceiverDataFrames.AutoSize = True
         Me.ucrReceiverDataFrames.frmParent = Me
-        Me.ucrReceiverDataFrames.Location = New System.Drawing.Point(253, 33)
+        Me.ucrReceiverDataFrames.Location = New System.Drawing.Point(244, 33)
         Me.ucrReceiverDataFrames.Margin = New System.Windows.Forms.Padding(0)
         Me.ucrReceiverDataFrames.Name = "ucrReceiverDataFrames"
         Me.ucrReceiverDataFrames.Selector = Nothing

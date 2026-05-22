@@ -11,13 +11,25 @@
 ' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ' GNU General Public License for more details.
 '
-' You should have received a copy of the GNU General Public License 
+' You should have received a copy of the GNU General Public License
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Imports instat
+Imports instat.Translations
 Imports System.ComponentModel
 
 Public Class ucrInputComboBox
-    Dim strItemsType As String = ""
+
+    ''' <summary>
+    ''' Specifies the type of information required when calling <see cref="GetText([Enum])"/>.
+    ''' In this case, either the combo box's key or value.
+    ''' </summary>
+    Public Enum EnumTextType
+        key
+        value
+    End Enum
+
+    Private _strRObjectItemsTypeLabel As String = ""
 
     Public Sub New()
 
@@ -39,7 +51,7 @@ Public Class ucrInputComboBox
         If bAutoChangeOnLeave Then
             If Not IsValid(strCurrent) Then
                 'TODO This message should contain the same message from ValidateText()
-                'Select Case MsgBox(Chr(34) & strCurrent & Chr(34) & " is an invalid name." & Environment.NewLine & "Would you like it to be automatically corrected?", vbYesNo, "Invalid Name")
+                'Select Case MsgBoxTranslate(Chr(34) & strCurrent & Chr(34) & " is an invalid name." & Environment.NewLine & "Would you like it to be automatically corrected?", vbYesNo, "Invalid Name")
                 '    Case MsgBoxResult.Yes
                 '        SetName(frmMain.clsRLink.MakeValidText(strCurrent))
                 '    Case Else
@@ -53,105 +65,78 @@ Public Class ucrInputComboBox
         If Not e.Cancel Then OnNameChanged()
     End Sub
 
+    Public Sub SetRObjectItemsTypeLabel(strRObjectItemsTypeLabel As String)
+        _strRObjectItemsTypeLabel = strRObjectItemsTypeLabel
+        FillItemTypes()
+    End Sub
+
     Public Sub SetItemsTypeAsColumns()
-        strItemsType = "Columns"
+        _strRObjectItemsTypeLabel = "Columns"
         FillItemTypes()
     End Sub
 
     Public Sub SetItemsTypeAsDataFrames()
-        strItemsType = "Data Frames"
+        _strRObjectItemsTypeLabel = "Data Frames"
         FillItemTypes()
     End Sub
 
-    Public Sub SetItemsTypeAsModels()
-        strItemsType = "Models"
-        FillItemTypes()
-    End Sub
-
-    Public Sub SetItemsTypeAsSurv()
-        strItemsType = "Surv"
-        FillItemTypes()
-    End Sub
-
-    Public Sub SetItemsTypeAsTables()
-        strItemsType = "Tables"
-        FillItemTypes()
-    End Sub
-
-    Public Sub SetItemsTypeAsGraphs()
-        strItemsType = "Graphs"
-        FillItemTypes()
-    End Sub
 
     Public Sub SetItemsTypeAsFilters()
-        strItemsType = "Filters"
+        _strRObjectItemsTypeLabel = "Filters"
         FillItemTypes()
     End Sub
 
     Public Sub SetItemsTypeAsColumnSelection()
-        strItemsType = "Column Selection"
+        _strRObjectItemsTypeLabel = "Column Selection"
 
         FillItemTypes()
     End Sub
 
 
     Public Sub SetItemsTypeAsKeys()
-        strItemsType = "Keys"
+        _strRObjectItemsTypeLabel = "Keys"
         FillItemTypes()
     End Sub
 
     Public Sub SetItemsTypeAsLinks()
-        strItemsType = "Links"
+        _strRObjectItemsTypeLabel = "Links"
         FillItemTypes()
     End Sub
 
     Private Sub FillItemTypes()
-        Select Case strItemsType
+        If ucrDataFrameSelector Is Nothing Then
+            Exit Sub
+        End If
+
+        Select Case _strRObjectItemsTypeLabel
             Case "Columns"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    frmMain.clsRLink.FillColumnNames(ucrDataFrameSelector.cboAvailableDataFrames.Text, cboColumns:=cboInput)
-                End If
+                frmMain.clsRLink.FillColumnNames(ucrDataFrameSelector.cboAvailableDataFrames.Text, cboColumns:=cboInput)
             Case "Keys"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetKeyNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray)
-                End If
+                cboInput.Items.Clear()
+                cboInput.Items.AddRange(frmMain.clsRLink.GetKeyNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray)
             Case "Data Frames"
                 'TODO not yet implemented
-            Case "Models"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetModelNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray)
-                End If
-            Case "Tables"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetTableNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray)
-                End If
-            Case "Graphs"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetGraphNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray())
-                End If
-            Case "Surv"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetSurvNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray())
-                End If
+            Case RObjectTypeLabel.Graph,
+                 RObjectTypeLabel.Table,
+                 RObjectTypeLabel.Model,
+                 RObjectTypeLabel.StructureLabel,
+                 RObjectTypeLabel.Summary
+                'for objects that are shown in the output viewer. do the following
+                cboInput.Items.Clear()
+                cboInput.Items.AddRange(frmMain.clsRLink.GetObjectNames(
+                                            strDataFrameName:=Me.ucrDataFrameSelector.strCurrDataFrame,
+                                            strRObjectTypeLabel:=Me._strRObjectItemsTypeLabel).ToArray)
+
             Case "Filters"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetFilterNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray())
-                End If
+                cboInput.Items.Clear()
+                cboInput.Items.AddRange(frmMain.clsRLink.GetFilterNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray())
             Case "Column Selection"
-                If ucrDataFrameSelector IsNot Nothing Then
-                    cboInput.Items.Clear()
-                    cboInput.Items.AddRange(frmMain.clsRLink.GetColumnSelectionNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray())
-                End If
+                cboInput.Items.Clear()
+                cboInput.Items.AddRange(frmMain.clsRLink.GetColumnSelectionNames(ucrDataFrameSelector.cboAvailableDataFrames.Text).ToArray())
         End Select
     End Sub
 
-    Public Sub ucrDataFrameSelector_DataFrameChanged() Handles ucrDataFrameSelector.DataFrameChanged
+    Public Sub ucrDataFrameSelector_ControlValueChanged() Handles ucrDataFrameSelector.ControlValueChanged
         FillItemTypes()
     End Sub
 
@@ -176,8 +161,39 @@ Public Class ucrInputComboBox
         End If
     End Sub
 
-    Public Overrides Function GetText() As String
-        Return cboInput.Text
+    ''' <summary>
+    '''  Returns information about the combo box's current selection as specified by 
+    '''  <paramref name="enumTextType"/>.
+    '''  If <paramref name="enumTextType"/> is not specified, returns the combo box's key value.
+    '''  If <paramref name="enumTextType"/> is invalid, then throws an exception.
+    ''' </summary>
+    ''' <param name="enumTextType"></param>
+    ''' <returns>Information about the combo box's current selection as specified by 
+    '''     <paramref name="enumTextType"/></returns>
+    Public Overrides Function GetText(Optional enumTextType As [Enum] = Nothing) As String
+        If enumTextType Is Nothing Then
+            enumTextType = ucrInputComboBox.EnumTextType.key
+        End If
+
+        Dim textType As EnumTextType
+        Try
+            textType = DirectCast(enumTextType, EnumTextType)
+        Catch ex As InvalidCastException
+            Throw New InvalidCastException("Invalid text type requested from input combo box.")
+        End Try
+
+        Select Case textType
+            Case ucrInputComboBox.EnumTextType.key
+                Return cboInput.Text
+            Case ucrInputComboBox.EnumTextType.value
+                Dim value As String = String.Empty
+                If dctDisplayParameterValues.TryGetValue(cboInput.Text, value) Then
+                    Return value
+                End If
+                Throw New Exception("Value not found for input combo box key: " & cboInput.Text)
+        End Select
+
+        Throw New InvalidEnumArgumentException("Unhandled text type requested from input combo box.")
     End Function
 
     Public Overrides Function GetValue() As Object
@@ -234,7 +250,7 @@ Public Class ucrInputComboBox
         End If
         If bSetConditions Then
             If GetParameter() Is Nothing Then
-                MsgBox("Developer error: Parameter must be set before items can be set. Modify setup for " & Name & " so that the parameter is set first.")
+                MsgBoxTranslate("Developer error: Parameter must be set before items can be set. Modify setup for " & Name & " so that the parameter is set first.")
             End If
         End If
         For Each kvpTemp In dctItemParameterValuePairs
@@ -252,7 +268,7 @@ Public Class ucrInputComboBox
     End Sub
 
     Private Sub cboInput_KeyPress(sender As Object, e As KeyPressEventArgs) Handles cboInput.KeyPress
-        bUserTyped = True
+        bUserTyped = False
     End Sub
 
     'Public Sub SetEditable(bEditable As Boolean)

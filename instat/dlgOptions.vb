@@ -44,6 +44,7 @@ Public Class dlgOptions
         LoadInstatOptions()
         ApplyEnabled(False)
         autoTranslate(Me)
+        lversion.Text = "v. " + My.Application.Info.Version.ToString
     End Sub
 
     Private Sub InitialiseDialog()
@@ -60,6 +61,13 @@ Public Class dlgOptions
         ucrNudWaitSeconds.Maximum = Integer.MaxValue
         ucrNudWaitSeconds.Increment = 0.5
 
+        ucrNudColUndoLimit.Maximum = 1000
+        ucrNudColUndoLimit.Minimum = 0
+        ucrNudColUndoLimit.Increment = 100
+        ucrNudRowUndoLimit.Maximum = Integer.MaxValue
+        ucrNudRowUndoLimit.Minimum = 100000
+        ucrNudRowUndoLimit.Increment = 100000
+
         strPreviewText = "R-Instat 2017"
         rtbCommandPreview.Text = strPreviewText
         rtbCommentPreview.Text = strPreviewText
@@ -67,66 +75,99 @@ Public Class dlgOptions
         SetView()
 
         ucrNudDigits.SetMinMax(0, 22)
+        ucrNudWidth.SetMinMax(0, Integer.MaxValue)
         ucrChkIncludeCommentsbyDefault.SetText("Include Comments by Default")
         ucrChkViewStructuredMenu.SetText("Show Structured Menu")
         ucrChkViewClimaticMenu.SetText("Show Climatic Menu")
         ucrChkViewProcurementMenu.SetText("Show Procurement Menu")
-        ucrChkViewOptionsByContextMenu.SetText("Show Options By Context Menu")
-        ucrChkShowRCommandsinOutputWindow.SetText(" Show R Commands in Output Window")
+        ucrChkViewTricotMenu.SetText("Show Tricot Menu")
+        ucrChkViewTricotXpMenu.SetText("Show Tricot XP Menu")
+        ucrChkViewOptionsByContextMenu.SetText("Show Experiments Menu")
+        ucrChkShowRCommandsinOutputWindow.SetText("Show R Commands in Output Window")
         ucrChkShowSignifStars.SetText("Show stars on summary tables for coefficients")
         ucrChkShowDataonGrid.SetText("Display dialog's selected data frame in grid")
         ucrChkIncludeDefaultParams.SetText("Include Default Parameter Values in R Commands")
         ucrChkAutoSave.SetText("Auto save a backup of data")
+        ucrChkTurnOffUndo.SetText("Switch off Spreadsheet-Style Undo")
         ucrChkShowWaitDialog.SetText("Show waiting dialog when command takes longer than")
+        ucrChkReminder.SetText("Remind me later when R-Instat new version available")
         ucrChkAutoSave.AddToLinkedControls(ucrNudAutoSaveMinutes, {True}, bNewLinkedAddRemoveParameter:=True, bNewLinkedHideIfParameterMissing:=True)
         ucrNudAutoSaveMinutes.SetLinkedDisplayControl(lblMinutes)
         ucrPnlGraphDisplay.AddRadioButton(rdoDisplayinOutputWindow)
         ucrPnlGraphDisplay.AddRadioButton(rdoDisplayinRViewer)
         ucrPnlGraphDisplay.AddRadioButton(rdoDisplayinSeparateWindows)
         ucrInputLanguage.SetLinkedDisplayControl(lblLanguage)
-        ucrInputLanguage.SetItems({"English", "French", "Portuguese", "Kiswahili"})
+        ucrInputLanguage.SetItems({"English", "French", "Italian", "Kiswahili", "Portuguese", "Russian", "Spanish"})
         ucrInputLanguage.SetDropDownStyleAsNonEditable()
+        ucrChkShowWaitDialog.SetText("Show waiting dialog when command takes longer than")
+
+        ucrChkMaxOutputsHeight.Checked = False
+        ucrChkMaxOutputsHeight.SetText("Set maximum height for outputs")
+        ucrNudMaxOutputsHeight.Visible = False
+        ucrNudMaxOutputsHeight.Minimum = 0
+        ucrNudMaxOutputsHeight.Maximum = 1000
+
+        tbpWebsite.Enabled = False
+        ucrChkReminder.Enabled = False
 
         SetVisibleLanButton()
     End Sub
 
-     Private Sub LoadInstatOptions()
+    Private Sub LoadInstatOptions()
         ucrChkIncludeDefaultParams.Checked = frmMain.clsInstatOptions.bIncludeRDefaultParameters
         ucrChkAutoSave.Checked = frmMain.clsInstatOptions.bAutoSaveData
+        ucrChkTurnOffUndo.Checked = frmMain.clsInstatOptions.bSwitchOffUndo
         SetOutputFont(frmMain.clsInstatOptions.fntOutput, frmMain.clsInstatOptions.clrOutput)
         SetCommandFont(frmMain.clsInstatOptions.fntScript, frmMain.clsInstatOptions.clrScript)
         SetCommentFont(frmMain.clsInstatOptions.fntComment, frmMain.clsInstatOptions.clrComment)
         SetEditorFont(frmMain.clsInstatOptions.fntEditor, frmMain.clsInstatOptions.clrEditor)
         ucrNudMaxRows.Value = frmMain.clsInstatOptions.iMaxRows
         ucrNudMaxCols.Value = frmMain.clsInstatOptions.iMaxCols
+        ucrNudColUndoLimit.Value = frmMain.clsInstatOptions.iUndoColLimit
+        ucrNudRowUndoLimit.Value = frmMain.clsInstatOptions.iUndoRowLimit
         ucrNudAutoSaveMinutes.Value = frmMain.clsInstatOptions.iAutoSaveDataMinutes
         ucrNudPreviewRows.Value = frmMain.clsInstatOptions.iPreviewRows
         ucrInputComment.SetName(frmMain.clsInstatOptions.strComment)
         ucrWorkingDirectory.SetName(frmMain.clsInstatOptions.strWorkingDirectory)
         ucrChkIncludeCommentsbyDefault.Checked = frmMain.clsInstatOptions.bIncludeCommentDefault
         ucrChkViewOptionsByContextMenu.Checked = frmMain.clsInstatOptions.bShowOptionsByContextMenu
+        ucrChkViewTricotMenu.Checked = frmMain.clsInstatOptions.bShowTricotMenu
+        ucrChkViewTricotXpMenu.Checked = frmMain.clsInstatOptions.bShowTricotXpMenu
         ucrChkViewProcurementMenu.Checked = frmMain.clsInstatOptions.bShowProcurementMenu
         ucrChkViewStructuredMenu.Checked = frmMain.clsInstatOptions.bShowStructuredMenu
         ucrChkViewClimaticMenu.Checked = frmMain.clsInstatOptions.bShowClimaticMenu
         ucrChkShowRCommandsinOutputWindow.Checked = frmMain.clsInstatOptions.bCommandsinOutput
         ucrNudDigits.Value = frmMain.clsInstatOptions.iDigits
+        ucrNudWidth.Value = frmMain.clsInstatOptions.iMaxWidth
         ucrChkShowSignifStars.Checked = frmMain.clsInstatOptions.bShowSignifStars
         ucrChkShowDataonGrid.Checked = frmMain.clsInstatOptions.bChangeDataFrame
         ucrChkShowWaitDialog.Checked = frmMain.clsInstatOptions.bShowWaitDialog
+        ucrChkReminder.Checked = frmMain.clsInstatOptions.bRemindLaterOption
         ucrNudWaitSeconds.Value = frmMain.clsInstatOptions.iWaitTimeDelaySeconds
         ucrInputDatabaseName.SetName(frmMain.clsInstatOptions.strClimsoftDatabaseName)
         ucrInputHost.SetName(frmMain.clsInstatOptions.strClimsoftHost)
         ucrInputPort.SetName(frmMain.clsInstatOptions.strClimsoftPort)
         ucrInputUserName.SetName(frmMain.clsInstatOptions.strClimsoftUsername)
+
+        'maximum heights for output
+        ucrChkMaxOutputsHeight.Checked = frmMain.clsInstatOptions.iMaxOutputsHeight > -1
+        ucrNudMaxOutputsHeight.Value = If(frmMain.clsInstatOptions.iMaxOutputsHeight > -1, frmMain.clsInstatOptions.iMaxOutputsHeight, clsInstatOptionsDefaults.DEFAULTiMaxOutputsHeight)
+
         Select Case frmMain.clsInstatOptions.strLanguageCultureCode
             Case "en-GB"
                 ucrInputLanguage.SetText("English")
             Case "fr-FR"
                 ucrInputLanguage.SetText("French")
-            Case "pt-PT"
-                ucrInputLanguage.SetText("Portuguese")
+            Case "it-IT"
+                ucrInputLanguage.SetText("Italian")
             Case "sw-KE"
                 ucrInputLanguage.SetText("Kiswahili")
+            Case "pt-PT"
+                ucrInputLanguage.SetText("Portuguese")
+            Case "ru-RU"
+                ucrInputLanguage.SetText("Russian")
+            Case "es-ES"
+                ucrInputLanguage.SetText("Spanish")
         End Select
 
         strPrevLanguageCulture = frmMain.clsInstatOptions.strLanguageCultureCode
@@ -150,7 +191,10 @@ Public Class dlgOptions
         frmMain.clsInstatOptions.SetPreviewRows(ucrNudPreviewRows.Value)
         frmMain.clsInstatOptions.SetMaxRows(ucrNudMaxRows.Value)
         frmMain.clsInstatOptions.SetMaxCols(ucrNudMaxCols.Value)
+        frmMain.clsInstatOptions.SetUndoColLimit(ucrNudColUndoLimit.Value)
+        frmMain.clsInstatOptions.SetUndoRowLimit(ucrNudRowUndoLimit.Value)
         frmMain.clsInstatOptions.SetAutoSaveData(ucrChkAutoSave.Checked)
+        frmMain.clsInstatOptions.SetOffUndo(ucrChkTurnOffUndo.Checked)
         frmMain.clsInstatOptions.SetAutoSaveDataMinutes(ucrNudAutoSaveMinutes.Value)
         frmMain.clsInstatOptions.SetLanguageCultureCode(strCurrLanguageCulture)
         frmMain.clsInstatOptions.SetWorkingDirectory(strWorkingDirectory)
@@ -158,18 +202,26 @@ Public Class dlgOptions
         frmMain.clsInstatOptions.bIncludeCommentDefault = ucrChkIncludeCommentsbyDefault.Checked
         frmMain.clsInstatOptions.SetShowOptionsByContextMenu(ucrChkViewOptionsByContextMenu.Checked)
         frmMain.clsInstatOptions.SetShowProcurementMenu(ucrChkViewProcurementMenu.Checked)
+        frmMain.clsInstatOptions.SetShowTricotMenu(ucrChkViewTricotMenu.Checked)
+        frmMain.clsInstatOptions.SetShowTricotXpMenu(ucrChkViewTricotXpMenu.Checked)
         frmMain.clsInstatOptions.SetShowStructuredMenu(ucrChkViewStructuredMenu.Checked)
         frmMain.clsInstatOptions.SetShowClimaticMenu(ucrChkViewClimaticMenu.Checked)
         frmMain.clsInstatOptions.SetCommandInOutpt(ucrChkShowRCommandsinOutputWindow.Checked)
         frmMain.clsInstatOptions.SetDigits(ucrNudDigits.Value)
+        frmMain.clsInstatOptions.SetMaxWidth(ucrNudWidth.Value)
         frmMain.clsInstatOptions.SetSignifStars(ucrChkShowSignifStars.Checked)
         frmMain.clsInstatOptions.SetChangeDataFrame(ucrChkShowDataonGrid.Checked)
         frmMain.clsInstatOptions.SetShowWaitDialog(ucrChkShowWaitDialog.Checked)
+        frmMain.clsInstatOptions.SetRemindLaterOption(ucrChkReminder.Checked)
         frmMain.clsInstatOptions.SetWaitTimeDelaySeconds(ucrNudWaitSeconds.Value)
         frmMain.clsInstatOptions.SetClimsoftDatabaseName(ucrInputDatabaseName.GetText())
         frmMain.clsInstatOptions.SetClimsoftHost(ucrInputHost.GetText())
         frmMain.clsInstatOptions.SetClimsoftPort(ucrInputPort.GetText())
         frmMain.clsInstatOptions.SetClimsoftUsername(ucrInputUserName.GetText())
+        frmMain.clsInstatOptions.SetMaximumOutputsHeight(If(ucrChkMaxOutputsHeight.Checked, ucrNudMaxOutputsHeight.Value, -1))
+
+        frmMain.clsInstatOptions.ExecuteRGlobalOptions()
+        frmMain.DisableEnableUndo(ucrChkTurnOffUndo.Checked)
     End Sub
 
     Private Sub SetView()
@@ -238,6 +290,12 @@ Public Class dlgOptions
         autoTranslate(Me)
         SetView() 'needed to ensure that the tree view in the left panel correctly displays translated text
 
+        If strCurrLanguageCulture <> strPrevLanguageCulture Then
+            Dim strCommentNewLanguage = Translations.GetTranslation(clsInstatOptionsDefaults.DEFAULTstrComment)
+            frmMain.clsInstatOptions.SetComment(strCommentNewLanguage)
+            ucrInputComment.SetName(strCommentNewLanguage)
+        End If
+
         If frmMain.Visible AndAlso strCurrLanguageCulture <> strPrevLanguageCulture Then
             frmMain.TranslateFrmMainMenu()
         End If
@@ -261,14 +319,20 @@ Public Class dlgOptions
                 strCurrLanguageCulture = "en-GB"
             Case "French"
                 strCurrLanguageCulture = "fr-FR"
-            Case "Portuguese"
-                strCurrLanguageCulture = "pt-PT"
+            Case "Italian"
+                strCurrLanguageCulture = "it-IT"
             Case "Kiswahili"
                 strCurrLanguageCulture = "sw-KE"
+            Case "Portuguese"
+                strCurrLanguageCulture = "pt-PT"
+            Case "Russian"
+                strCurrLanguageCulture = "ru-RU"
+            Case "Spanish"
+                strCurrLanguageCulture = "es-ES"
         End Select
         ApplyEnabled(True)
     End Sub
-  
+
     Private Sub cmdScriptChange_Click(sender As Object, e As EventArgs) Handles cmdCommandFormat.Click
         dlgFont.ShowColor = True
         dlgFont.MaxSize = 50
@@ -323,7 +387,7 @@ Public Class dlgOptions
 
     End Sub
 
-    Private Sub AllControls_ControlValueChanged() Handles ucrNudMaxCols.ControlValueChanged, ucrNudAutoSaveMinutes.ControlValueChanged, ucrNudPreviewRows.ControlValueChanged, ucrInputComment.ControlContentsChanged, ucrChkIncludeCommentsbyDefault.ControlValueChanged, ucrNudMaxRows.ControlValueChanged, ucrChkIncludeDefaultParams.ControlValueChanged, ucrChkShowRCommandsinOutputWindow.ControlValueChanged, ucrNudDigits.ControlValueChanged, ucrChkShowSignifStars.ControlValueChanged, ucrChkShowDataonGrid.ControlValueChanged, ucrChkAutoSave.ControlValueChanged, ucrChkShowWaitDialog.ControlValueChanged, ucrNudWaitSeconds.ControlValueChanged, ucrChkViewClimaticMenu.ControlValueChanged, ucrChkViewStructuredMenu.ControlValueChanged, ucrChkViewProcurementMenu.ControlValueChanged, ucrChkViewOptionsByContextMenu.ControlValueChanged, ucrInputDatabaseName.ControlValueChanged, ucrInputHost.ControlValueChanged, ucrInputPort.ControlValueChanged, ucrInputUserName.ControlValueChanged
+    Private Sub AllControls_ControlValueChanged() Handles ucrNudMaxCols.ControlValueChanged, ucrNudAutoSaveMinutes.ControlValueChanged, ucrNudPreviewRows.ControlValueChanged, ucrInputComment.ControlContentsChanged, ucrChkIncludeCommentsbyDefault.ControlValueChanged, ucrNudMaxRows.ControlValueChanged, ucrNudWidth.ControlValueChanged, ucrChkIncludeDefaultParams.ControlValueChanged, ucrChkShowRCommandsinOutputWindow.ControlValueChanged, ucrNudDigits.ControlValueChanged, ucrChkShowSignifStars.ControlValueChanged, ucrChkShowDataonGrid.ControlValueChanged, ucrChkAutoSave.ControlValueChanged, ucrChkTurnOffUndo.ControlValueChanged, ucrChkShowWaitDialog.ControlValueChanged, ucrNudWaitSeconds.ControlValueChanged, ucrChkViewClimaticMenu.ControlValueChanged, ucrChkViewStructuredMenu.ControlValueChanged, ucrChkViewTricotMenu.ControlValueChanged, ucrChkViewTricotXpMenu.ControlValueChanged, ucrChkViewProcurementMenu.ControlValueChanged, ucrChkViewOptionsByContextMenu.ControlValueChanged, ucrInputDatabaseName.ControlValueChanged, ucrInputHost.ControlValueChanged, ucrInputPort.ControlValueChanged, ucrInputUserName.ControlValueChanged, ucrChkMaxOutputsHeight.ControlValueChanged, ucrNudMaxOutputsHeight.ControlValueChanged, ucrChkReminder.ControlValueChanged, ucrNudColUndoLimit.ControlValueChanged, ucrNudRowUndoLimit.ControlValueChanged
         ApplyEnabled(True)
     End Sub
 
@@ -345,6 +409,10 @@ Public Class dlgOptions
         Help.ShowHelp(Me.Parent, frmMain.strStaticPath & "\" & frmMain.strHelpFilePath, HelpNavigator.TopicId, "336")
     End Sub
 
+    Private Sub ucrChkMaxOutputHeight_ControlValueChanged() Handles ucrChkMaxOutputsHeight.ControlValueChanged
+        ucrNudMaxOutputsHeight.Visible = ucrChkMaxOutputsHeight.Checked
+    End Sub
+
     Private Sub ucrChkAutoSave_ControlValueChanged() Handles ucrChkAutoSave.ControlValueChanged
         If ucrChkAutoSave.Checked Then
             lblEvery.Visible = True
@@ -354,7 +422,7 @@ Public Class dlgOptions
     End Sub
 
     Private Sub cmdFactoryReset_Click(sender As Object, e As EventArgs) Handles cmdFactoryReset.Click
-        Dim msgFactoryReset = MsgBox("Are you sure you want to reset to factory defaults?", MessageBoxButtons.YesNo, "Factory Reset")
+        Dim msgFactoryReset = MsgBoxTranslate("Are you sure you want to reset to factory defaults?", MessageBoxButtons.YesNo, "Factory Reset")
         If msgFactoryReset = DialogResult.Yes Then
             frmMain.clsInstatOptions = New InstatOptions(False)
             LoadInstatOptions()
